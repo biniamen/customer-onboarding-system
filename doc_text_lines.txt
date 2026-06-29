@@ -1,0 +1,79 @@
+Telebirr
+ Agent 
+I
+nternal 
+S
+ystems
+ Integration
+Security Checklist
+To be filled by 
+Application Development Team
+Checked by IT Security Team
+Date April 1
+5
+/2026
+1
+-Input Validation
+Security test
+Impact 
+Result 
+Remark 
+Test Date 
+Is strict input validation implemented to prevent exploits?
+High
+Are multi-factor authentication mechanisms in place for sensitive access?
+High
+Are session time out implemented
+High
+2
+-
+Network Security
+Security test
+Impact 
+Result 
+Remark 
+Test Date 
+Secure communication
+High
+Is network traffic controlled by FortiGate firewall policies?
+High
+3
+-User Access Controls
+Security test
+Impact 
+Result 
+Remark 
+Test Date 
+Does 
+the
+ system generate logs (e.g., access logs)
+High
+Are role-based access controls implemented to enforce the principle of least privilege?
+High
+4
+-API Integration
+Security test
+Impact 
+Result 
+Remark 
+Test Date 
+What 
+to
+system 
+Telebirr
+ Agent
+API
+  integrated
+ with
+High
+Pass
+Which API type does the system use (e.g., SOAP, RESTful, 
+GraphQL
+, gRPC)?
+High
+Are API scopes defined and limited 
+to what is necessary for the integration
+?
+High
+What authentication methods are used (e.g., Username and Password, OAuth, JWT, API keys)?
+High

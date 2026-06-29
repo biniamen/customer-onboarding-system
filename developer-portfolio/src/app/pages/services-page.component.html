@@ -1,0 +1,29 @@
+<section class="section">
+  <div class="container">
+    <p class="eyebrow">Services</p>
+    <h1 class="page-title">From core banking integrations to digital transformation programs, I deliver where systems and business outcomes meet.</h1>
+    <p class="page-copy">
+      I offer the blend of hands-on engineering, architecture thinking, banking domain knowledge, and delivery leadership
+      needed for high-stakes enterprise initiatives.
+    </p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container card-grid">
+    <article class="panel content-card content-card--layered" *ngFor="let service of services">
+      <h2>{{ service.title }}</h2>
+      <p>{{ service.description }}</p>
+    </article>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container panel action-panel action-panel--framed">
+    <div>
+      <p class="eyebrow">Ideal engagements</p>
+      <h2>Best suited for banks and enterprises that need secure delivery, stronger architecture, and accountable execution.</h2>
+    </div>
+    <a class="button-primary" routerLink="/contact">Request a discussion</a>
+  </div>
+</section>

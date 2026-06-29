@@ -1,0 +1,50 @@
+<section class="section">
+  <div class="container page-grid">
+    <div>
+      <p class="eyebrow">About</p>
+      <h1 class="page-title">A software engineer, technology leader, and digital transformation specialist built for enterprise realities.</h1>
+      <p class="page-copy">
+        I bring a rare combination of deep technical expertise, strategic thinking, and strong business understanding,
+        especially within banking and financial services. My core strength is turning complex operational and customer-facing
+        challenges into secure, scalable, and high-impact digital solutions.
+      </p>
+    </div>
+
+    <aside class="panel page-aside page-aside--signal">
+      <p class="page-aside__label">Career signal</p>
+      <ul>
+        <li *ngFor="let highlight of highlights">{{ highlight }}</li>
+      </ul>
+    </aside>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container content-grid">
+    <article class="panel content-card">
+      <h2>Technical depth with banking context</h2>
+      <p>
+        My work spans C#, Java Spring Boot, Python, PHP, Angular, TypeScript, Oracle, PostgreSQL, MySQL, and SQL Server,
+        but the difference is not only the stack. I understand how technology must support compliance, customer experience,
+        operational reliability, regulatory expectations, and secure enterprise integration.
+      </p>
+    </article>
+
+    <article class="panel content-card">
+      <h2>What sets my profile apart</h2>
+      <ul class="content-list">
+        <li *ngFor="let principle of principles">{{ principle }}</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container panel action-panel action-panel--framed">
+    <div>
+      <p class="eyebrow">Leadership lens</p>
+      <h2>I do not just build software. I build reliable digital systems that create measurable business impact.</h2>
+    </div>
+    <a class="button-primary" routerLink="/contact">Talk about your transformation goals</a>
+  </div>
+</section>

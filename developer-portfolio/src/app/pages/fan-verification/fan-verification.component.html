@@ -1,0 +1,103 @@
+<div class="space-y-7">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <div>
+      <p class="text-sm font-semibold uppercase tracking-[0.3em] text-accent-600">Step 1</p>
+      <h2 class="mt-2 text-4xl font-extrabold tracking-tight text-slate-900">Verify FAN and retrieve Customer demographic data</h2>
+      <p class="mt-3 max-w-4xl text-base leading-8 text-slate-600">
+        Enter the customer FAN, send the OTP through IDA, and validate the eKYC response before capturing the additional onboarding fields.
+      </p>
+    </div>
+    <div class="inline-flex items-center rounded-full border border-brand-200 bg-gradient-to-r from-brand-50 to-accent-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-accent-700">
+      Secure IDA eKYC
+    </div>
+  </div>
+
+  <div *ngIf="apiError" class="status-card error">{{ apiError }}</div>
+  <div *ngIf="apiSuccess" class="status-card success">{{ apiSuccess }}</div>
+
+  <div class="grid gap-6 2xl:grid-cols-[minmax(0,1.45fr),420px]">
+    <form class="panel-card" [formGroup]="form" novalidate>
+      <div class="soft-panel">
+        <div class="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brand-600">Verification entry</p>
+            <h3 class="mt-2 text-2xl font-bold text-slate-900">Customer FAN lookup</h3>
+          </div>
+          <p class="text-sm text-slate-500">A 16-digit FAN is required before OTP delivery.</p>
+        </div>
+
+        <label class="field-label" for="fan">FAN Number</label>
+        <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr),180px]">
+          <div class="flex-1">
+            <input
+              id="fan"
+              class="input-field tracking-[0.24em]"
+              formControlName="fan"
+              maxlength="16"
+              placeholder="Enter 16-digit FAN"
+              (input)="onFanInput($event)"
+            />
+            <p *ngIf="f.fan.touched && f.fan.invalid" class="mt-2 text-sm text-rose-600">
+              A valid 16-digit FAN is required.
+            </p>
+          </div>
+          <button type="button" class="btn-primary md:min-w-[160px]" [disabled]="sending" (click)="sendFanOtp()">
+            {{ sending ? 'Sending OTP...' : 'Send OTP' }}
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="showOtpSection" class="mt-7 soft-panel bg-gradient-to-br from-brand-50 via-white to-accent-50/50">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-xl font-bold text-slate-900">OTP validation</h3>
+            <p class="mt-1 text-sm text-slate-600">
+              Transaction ID: <span class="font-semibold text-slate-800">{{ txnId }}</span>
+            </p>
+            <p class="mt-1 text-sm text-slate-600">
+              Delivery channels:
+              <span class="font-semibold text-slate-800">{{ maskedMobile || 'phone not returned' }}</span>
+              <span *ngIf="maskedEmail">, {{ maskedEmail }}</span>
+            </p>
+          </div>
+          <button type="button" class="btn-secondary" (click)="editFan()">Edit FAN</button>
+        </div>
+
+        <div class="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr),170px,210px] xl:items-end">
+          <div>
+            <label class="field-label" for="otp">OTP Code</label>
+            <input
+              id="otp"
+              class="input-field tracking-[0.24em]"
+              formControlName="otp"
+              maxlength="6"
+              placeholder="6-digit OTP"
+              (input)="onOtpInput($event)"
+            />
+            <p *ngIf="f.otp.touched && f.otp.invalid" class="mt-2 text-sm text-rose-600">
+              Enter the 6-digit OTP sent to the customer.
+            </p>
+          </div>
+          <button type="button" class="btn-secondary" [disabled]="sending" (click)="resend()">Resend OTP</button>
+          <button type="button" class="btn-primary" [disabled]="verifying" (click)="verifyFanOtp()">
+            {{ verifying ? 'Verifying...' : 'Verify & Continue' }}
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <div class="panel-card bg-gradient-to-br from-accent-900 via-accent-700 to-brand-500 text-white">
+      <p class="text-sm font-semibold uppercase tracking-[0.26em] text-amber-100">Quick tips</p>
+      <div class="mt-5 space-y-5">
+        <div class="rounded-[24px] bg-white/10 p-5 backdrop-blur">
+          <p class="font-semibold text-white">Keep the FAN locked after OTP</p>
+          <p class="mt-2 text-sm leading-7 text-emerald-50/90">This prevents the operator from changing the customer identity mid-verification.</p>
+        </div>
+        <div class="rounded-[24px] bg-white/10 p-5 backdrop-blur">
+          <p class="font-semibold text-white">Proceed only after eKYC success</p>
+          <p class="mt-2 text-sm leading-7 text-emerald-50/90">The next step depends on the full response, including `psut` and identity fields.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

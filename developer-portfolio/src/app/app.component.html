@@ -1,0 +1,63 @@
+<div class="page-shell">
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="brand-mark" routerLink="/" aria-label="Biniyam home">
+        <span class="brand-mark__monogram">BK</span>
+        <span>
+          <strong>Biniyam K.</strong>
+          <small>Software engineer, automation specialist, and technology leader</small>
+        </span>
+      </a>
+
+      <button
+        class="menu-toggle"
+        type="button"
+        (click)="toggleMobileMenu()"
+        [attr.aria-expanded]="mobileMenuOpen"
+        aria-controls="primary-navigation">
+        Menu
+      </button>
+
+      <nav
+        id="primary-navigation"
+        class="site-nav"
+        [class.site-nav--open]="mobileMenuOpen"
+        aria-label="Primary navigation">
+        <a
+          *ngFor="let item of navigation"
+          [routerLink]="item.path"
+          routerLinkActive="is-active"
+          [routerLinkActiveOptions]="{ exact: item.path === '/' }">
+          {{ item.label }}
+        </a>
+        <a class="button-primary site-nav__cta" routerLink="/contact">Start a project conversation</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <router-outlet></router-outlet>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container site-footer__inner panel">
+      <div>
+        <p class="eyebrow">Software, automation, and digital transformation</p>
+        <h2>Need a leader who can move from architecture decisions to delivery execution?</h2>
+      </div>
+      <div class="site-footer__meta">
+        <p>
+          Biniyam helps banks and enterprise teams modernize platforms, connect core systems,
+          automate workflows, improve operations, and deliver secure digital products with confidence.
+        </p>
+        <div class="site-footer__socials" aria-label="Social links">
+          <a href="https://www.linkedin.com/in/biniyam-kefelegn-8a80ab102/" target="_blank" rel="noreferrer">LinkedIn</a>
+          <a href="https://web.facebook.com/biniyam.kefelegne" target="_blank" rel="noreferrer">Facebook</a>
+          <a href="https://wa.me/251911825671" target="_blank" rel="noreferrer">WhatsApp</a>
+          <a href="https://t.me/Biniyam_1" target="_blank" rel="noreferrer">Telegram</a>
+        </div>
+        <a class="button-secondary" routerLink="/contact">Discuss your initiative</a>
+      </div>
+    </div>
+  </footer>
+</div>

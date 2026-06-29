@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 900" role="img" aria-label="Professional portrait placeholder">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="900" fill="url(#bg)"/>
+  <circle cx="400" cy="280" r="115" fill="#d0a68b"/>
+  <path d="M270 250c20-80 72-125 133-125 66 0 120 44 137 130-33-18-69-28-110-28-52 0-108 9-160 23z" fill="#111827"/>
+  <path d="M262 610c22-124 92-190 138-190 48 0 118 67 138 190z" fill="#111827"/>
+  <path d="M322 430h156l26 70-53 46h-104l-52-46z" fill="#f8fafc"/>
+  <path d="M368 431h65l-8 70h-48z" fill="#0f172a"/>
+  <circle cx="400" cy="450" r="240" fill="none" stroke="url(#ring)" stroke-width="10" opacity="0.7"/>
+  <text x="400" y="760" text-anchor="middle" fill="#f8fafc" font-size="42" font-family="Segoe UI, sans-serif">Biniyam K.</text>
+  <text x="400" y="808" text-anchor="middle" fill="#94a3b8" font-size="26" font-family="Segoe UI, sans-serif">Professional portrait slot</text>
+</svg>

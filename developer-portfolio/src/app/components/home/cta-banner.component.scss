@@ -1,0 +1,31 @@
+.cta-banner {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1.2fr 1fr;
+  padding: 2rem;
+}
+
+.cta-banner h2 {
+  max-width: 14ch;
+  margin: 0.8rem 0 0;
+  font-size: clamp(1.9rem, 3.2vw, 3rem);
+  line-height: 1.1;
+}
+
+.cta-banner__content {
+  display: grid;
+  gap: 1rem;
+  align-content: center;
+}
+
+.cta-banner__content p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+@media (max-width: 900px) {
+  .cta-banner {
+    grid-template-columns: 1fr;
+  }
+}

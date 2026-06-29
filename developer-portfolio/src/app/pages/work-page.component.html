@@ -1,0 +1,19 @@
+<section class="section">
+  <div class="container">
+    <p class="eyebrow">Work</p>
+    <h1 class="page-title">Mission-critical systems delivered across banking operations, payments, onboarding, and enterprise integration.</h1>
+    <p class="page-copy">
+      These examples reflect the kind of work I am trusted with: systems that need to be secure, dependable, scalable, and aligned with real business operations.
+    </p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container card-grid">
+    <article class="panel content-card content-card--layered" *ngFor="let engagement of engagements">
+      <h2>{{ engagement.title }}</h2>
+      <p><strong>Delivered value:</strong> {{ engagement.outcome }}</p>
+      <p>{{ engagement.detail }}</p>
+    </article>
+  </div>
+</section>

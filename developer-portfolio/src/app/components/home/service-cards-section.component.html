@@ -1,0 +1,31 @@
+<section class="section">
+  <div class="container">
+    <p class="eyebrow">Services</p>
+    <h2 class="section-heading">Engineering, banking domain expertise, and transformation leadership in one profile.</h2>
+    <p class="section-copy">
+      What makes this profile different is the combination of strong engineering expertise, real banking systems experience,
+      enterprise integration capability, and leadership across complex transformation programs.
+    </p>
+
+    <div class="services-grid">
+      <article class="panel service-card" *ngFor="let service of services">
+        <div class="service-card__icon" [ngSwitch]="service.icon" aria-hidden="true">
+          <svg *ngSwitchCase="'banking'" viewBox="0 0 64 64">
+            <path d="M10 24L32 12l22 12v4H10zM16 30h6v18h-6zM29 30h6v18h-6zM42 30h6v18h-6zM10 50h44v4H10z"></path>
+          </svg>
+          <svg *ngSwitchCase="'integration'" viewBox="0 0 64 64">
+            <path d="M18 18h12v12H18zM34 34h12v12H34zM34 18h12v12H34zM18 34h12v12H18zM30 24h4v16h-4zM24 30h16v4H24z"></path>
+          </svg>
+          <svg *ngSwitchDefault viewBox="0 0 64 64">
+            <path d="M32 10l18 8v12c0 12-7.8 22.8-18 26-10.2-3.2-18-14-18-26V18zM24 31l6 6 12-14"></path>
+          </svg>
+        </div>
+        <h3>{{ service.title }}</h3>
+        <p>{{ service.description }}</p>
+        <ul>
+          <li *ngFor="let outcome of service.outcomes">{{ outcome }}</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>

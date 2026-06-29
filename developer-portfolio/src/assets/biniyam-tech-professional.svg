@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-label="Tech professional placeholder">
+  <defs>
+    <linearGradient id="bg2" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#08111f"/>
+      <stop offset="55%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1d1041"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#bg2)"/>
+  <g opacity="0.22" stroke="#38bdf8" fill="none">
+    <rect x="70" y="90" width="260" height="120" rx="16"/>
+    <rect x="860" y="110" width="220" height="90" rx="16"/>
+    <rect x="830" y="300" width="250" height="130" rx="18"/>
+    <rect x="140" y="560" width="250" height="130" rx="18"/>
+    <path d="M330 150h210M540 150h320M270 620h260M530 620h300"/>
+  </g>
+  <g fill="none" stroke="url(#glow)" stroke-width="3" opacity="0.7">
+    <path d="M150 180h260"/>
+    <path d="M900 350h120"/>
+    <path d="M220 620h110"/>
+    <path d="M600 220h260"/>
+  </g>
+  <circle cx="630" cy="400" r="120" fill="#d0a68b"/>
+  <path d="M510 385c16-78 70-118 122-118 58 0 109 36 125 116-30-14-60-22-99-22-50 0-95 8-148 24z" fill="#0f172a"/>
+  <path d="M470 745c18-118 88-202 162-202 71 0 145 85 162 202z" fill="#10213a"/>
+  <rect x="330" y="600" width="280" height="150" rx="18" fill="#0b1324" stroke="#14b8a6" stroke-opacity="0.45"/>
+  <text x="470" y="660" text-anchor="middle" fill="#f8fafc" font-size="28" font-family="Segoe UI, sans-serif">Automation</text>
+  <text x="470" y="702" text-anchor="middle" fill="#14b8a6" font-size="22" font-family="Segoe UI, sans-serif">Apps • APIs • Workflows</text>
+  <text x="840" y="180" fill="#f8fafc" font-size="34" font-family="Segoe UI, sans-serif">Integration</text>
+  <text x="870" y="370" fill="#f8fafc" font-size="34" font-family="Segoe UI, sans-serif">Digital</text>
+  <text x="870" y="408" fill="#f8fafc" font-size="34" font-family="Segoe UI, sans-serif">Platforms</text>
+  <text x="150" y="168" fill="#f8fafc" font-size="26" font-family="Segoe UI, sans-serif">Tech Environment</text>
+</svg>

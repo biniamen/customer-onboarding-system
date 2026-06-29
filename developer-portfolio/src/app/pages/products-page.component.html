@@ -1,0 +1,28 @@
+<section class="section">
+  <div class="container">
+    <p class="eyebrow">Products</p>
+    <h1 class="page-title">Reusable accelerators shaped by real banking and enterprise delivery challenges.</h1>
+    <p class="page-copy">
+      These offerings reflect patterns proven through hands-on work in onboarding, integration, middleware, and transformation delivery.
+    </p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container card-grid">
+    <article class="panel content-card content-card--layered" *ngFor="let product of products">
+      <h2>{{ product.name }}</h2>
+      <p>{{ product.description }}</p>
+    </article>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container panel action-panel action-panel--framed">
+    <div>
+      <p class="eyebrow">Custom engagement</p>
+      <h2>Need a more tailored architecture or transformation approach? I can shape it around your operating model and enterprise constraints.</h2>
+    </div>
+    <a class="button-primary" routerLink="/contact">Ask about a tailored approach</a>
+  </div>
+</section>

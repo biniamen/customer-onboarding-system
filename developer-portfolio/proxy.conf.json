@@ -1,0 +1,18 @@
+{
+  "/api/ida": {
+    "target": "http://10.10.13.68:8080",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api/ida": "/api/Ida"
+    }
+  },
+  "/api/fcubs": {
+    "target": "http://10.1.200.153:7003",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api/fcubs": "/FCUBSCustomerService/FCUBSCustomerService"
+    }
+  }
+}

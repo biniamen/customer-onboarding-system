@@ -1,0 +1,17 @@
+<section class="section">
+  <div class="container">
+    <div class="stats-wrap panel">
+      <div class="stats-wrap__intro">
+        <p class="eyebrow">Why clients hire me</p>
+        <h2>Technical depth, business understanding, and the ability to turn complex work into practical delivery.</h2>
+      </div>
+      <div class="stats-grid">
+        <article *ngFor="let stat of stats">
+          <strong>{{ stat.value }}</strong>
+          <h3>{{ stat.label }}</h3>
+          <p>{{ stat.description }}</p>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>

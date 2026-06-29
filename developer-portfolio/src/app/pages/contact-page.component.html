@@ -1,0 +1,92 @@
+<section class="section">
+  <div class="container contact-grid">
+    <div>
+      <p class="eyebrow">Contact</p>
+      <h1 class="page-title">Start with the software problem, automation goal, or integration challenge.</h1>
+      <p class="page-copy">
+        If you are looking for someone who understands both technology and business, can lead from architecture to delivery,
+        and has proven experience across enterprise systems, automation, fintech, and digital platforms, I am ready to bring that value to your organization.
+      </p>
+
+      <div class="panel contact-aside">
+        <h2>What to include</h2>
+        <ul class="content-list">
+          <li>The workflow, product, platform, or internal process you want to improve</li>
+          <li>The delivery, integration, automation, or modernization challenge creating friction</li>
+          <li>The outcome you want in the next 60 to 90 days, whether that is speed, clarity, automation, or scale</li>
+        </ul>
+      </div>
+
+      <div class="contact-links">
+        <a href="mailto:biniyamkm@gmail.com">biniyamkm@gmail.com</a>
+        <a href="https://www.linkedin.com/in/biniyam-kefelegn-8a80ab102/" target="_blank" rel="noreferrer">LinkedIn</a>
+        <a href="https://web.facebook.com/biniyam.kefelegne" target="_blank" rel="noreferrer">Facebook</a>
+        <a href="https://wa.me/251911825671" target="_blank" rel="noreferrer">WhatsApp</a>
+        <a href="https://t.me/Biniyam_1" target="_blank" rel="noreferrer">Telegram</a>
+      </div>
+    </div>
+
+    <form class="panel contact-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="field-grid">
+        <label>
+          <span>Name</span>
+          <input type="text" formControlName="name" placeholder="Your name">
+          <small *ngIf="getControlError('name')">{{ getControlError('name') }}</small>
+        </label>
+
+        <label>
+          <span>Email</span>
+          <input type="email" formControlName="email" placeholder="you@company.com">
+          <small *ngIf="getControlError('email')">{{ getControlError('email') }}</small>
+        </label>
+
+        <label>
+          <span>Company</span>
+          <input type="text" formControlName="company" placeholder="Company name">
+          <small *ngIf="getControlError('company')">{{ getControlError('company') }}</small>
+        </label>
+
+        <label>
+          <span>Project type</span>
+          <select formControlName="projectType">
+            <option value="">Select one</option>
+            <option value="automation">Workflow automation</option>
+            <option value="web-app">Web application or portal</option>
+            <option value="integration">API or system integration</option>
+            <option value="transformation">Transformation or modernization</option>
+          </select>
+          <small *ngIf="getControlError('projectType')">{{ getControlError('projectType') }}</small>
+        </label>
+
+        <label class="field-grid__full">
+          <span>Engagement scale</span>
+          <select formControlName="budget">
+            <option value="">Select one</option>
+            <option value="advisory">Advisory or assessment</option>
+            <option value="delivery">Project delivery engagement</option>
+            <option value="program">Transformation program</option>
+            <option value="flexible">Prefer to discuss</option>
+          </select>
+          <small *ngIf="getControlError('budget')">{{ getControlError('budget') }}</small>
+        </label>
+
+        <label class="field-grid__full">
+          <span>Project details</span>
+          <textarea formControlName="details" rows="6" placeholder="Tell me about the system, timeline, key blockers, and what kind of outcome you need."></textarea>
+          <small *ngIf="getControlError('details')">{{ getControlError('details') }}</small>
+        </label>
+      </div>
+
+      <button class="button-primary" type="submit" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Sending...' : 'Send inquiry' }}
+      </button>
+
+      <p class="contact-note">
+        Direct EmailJS sending is supported when service credentials are available. Until then, the form still prepares a complete inquiry to your email address.
+      </p>
+
+      <p class="status-message success" *ngIf="successMessage">{{ successMessage }}</p>
+      <p class="status-message error" *ngIf="errorMessage">{{ errorMessage }}</p>
+    </form>
+  </div>
+</section>

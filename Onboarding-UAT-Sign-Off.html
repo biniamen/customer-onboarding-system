@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Onboarding UAT Sign-Off</title>
+  <style>
+    body {
+      font-family: Calibri, Arial, sans-serif;
+      font-size: 11pt;
+      color: #1f2937;
+      line-height: 1.45;
+      margin: 32px;
+    }
+    h1, h2, h3 {
+      color: #0b3f22;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 22pt;
+      border-bottom: 3px solid #e0a114;
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+    }
+    h2 {
+      font-size: 14pt;
+      margin-top: 22px;
+    }
+    p {
+      margin: 8px 0;
+    }
+    ul {
+      margin: 8px 0 8px 22px;
+    }
+    li {
+      margin: 4px 0;
+    }
+    .meta {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 18px;
+    }
+    .meta td {
+      border: 1px solid #cfd8dc;
+      padding: 8px 10px;
+      vertical-align: top;
+    }
+    .meta td.label {
+      width: 28%;
+      background: #f8fafc;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    table.grid {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    table.grid th, table.grid td {
+      border: 1px solid #cfd8dc;
+      padding: 8px 10px;
+      vertical-align: top;
+      text-align: left;
+    }
+    table.grid th {
+      background: #eef6f0;
+      color: #0b3f22;
+      font-weight: 700;
+    }
+    .decision {
+      margin-top: 10px;
+      padding: 12px 14px;
+      border: 1px solid #d7e3da;
+      background: #fbfdfb;
+    }
+    .line {
+      border-bottom: 1px solid #9ca3af;
+      height: 22px;
+      margin-top: 6px;
+    }
+    .footer-note {
+      margin-top: 24px;
+      font-style: italic;
+      color: #475569;
+    }
+  </style>
+</head>
+<body>
+  <h1>User Acceptance Testing (UAT) Sign-Off</h1>
+  <h2>Digital Onboarding System</h2>
+
+  <table class="meta">
+    <tr><td class="label">Module</td><td>Customer Onboarding / CIF &amp; Account Opening</td></tr>
+    <tr><td class="label">Environment</td><td>UAT</td></tr>
+    <tr><td class="label">Project Name</td><td>Digital Onboarding System</td></tr>
+    <tr><td class="label">Business Owner / Receiving Unit</td><td>KYC Unit</td></tr>
+    <tr><td class="label">Prepared By</td><td>Project / Delivery Team</td></tr>
+    <tr><td class="label">Document Date</td><td>May 15, 2026</td></tr>
+    <tr><td class="label">Version</td><td>1.0</td></tr>
+  </table>
+
+  <h2>1. Purpose</h2>
+  <p>
+    This document records the formal User Acceptance Testing sign-off for the
+    Customer Onboarding / CIF &amp; Account Opening module of the Digital Onboarding System.
+    It confirms that the solution has been reviewed by the designated business stakeholders
+    and is ready for operational handover, subject to the decision and approval of the KYC Unit.
+  </p>
+
+  <h2>2. Objective</h2>
+  <p>The objective of this sign-off is to confirm that the onboarding solution:</p>
+  <ul>
+    <li>supports the required maker and checker onboarding workflow</li>
+    <li>captures and validates key KYC information</li>
+    <li>supports CIF creation and account opening processing</li>
+    <li>provides visibility of customer information, images, signature, and supporting documents</li>
+    <li>supports operational review, approval, and reporting requirements</li>
+    <li>is ready for controlled business use in line with the agreed UAT scope</li>
+  </ul>
+
+  <h2>3. Scope of UAT</h2>
+  <p>The UAT scope for this sign-off covers the onboarding module only and includes:</p>
+  <ul>
+    <li>FAN / Fayda verification flow</li>
+    <li>OTP verification flow</li>
+    <li>customer profile retrieval and display</li>
+    <li>customer photo handling and verified profile generation</li>
+    <li>CIF data capture and validation</li>
+    <li>account opening data capture</li>
+    <li>funding source selection and validation</li>
+    <li>photo and signature upload flow</li>
+    <li>maker submission to checker</li>
+    <li>checker approval and account creation flow</li>
+    <li>approved account review and follow-up</li>
+    <li>onboarding reporting and tracking</li>
+    <li>KYC review workflow and visibility</li>
+  </ul>
+  <p><strong>Out of Scope for this sign-off</strong></p>
+  <ul>
+    <li>Telebirr Agent Transfer module</li>
+    <li>external production environment cutover activities</li>
+    <li>infrastructure, firewall, and network readiness outside the application itself</li>
+  </ul>
+
+  <h2>4. UAT Summary</h2>
+  <p>
+    Based on completed User Acceptance Testing activities, the onboarding module has been reviewed
+    against the agreed business and operational workflow. The implemented solution supports the expected
+    onboarding lifecycle from customer verification through account opening and post-approval monitoring.
+  </p>
+  <p>The current version is considered:</p>
+  <ul>
+    <li>functionally aligned with the agreed onboarding workflow</li>
+    <li>suitable for operational use in UAT</li>
+    <li>ready for business sign-off and handover decision by the KYC Unit</li>
+  </ul>
+
+  <h2>5. High-Level Functional Coverage Confirmed</h2>
+  <p>The following key capabilities were verified during UAT:</p>
+  <ul>
+    <li>maker can initiate and complete onboarding requests</li>
+    <li>checker can review and approve prepared onboarding requests</li>
+    <li>customer profile details can be captured and validated</li>
+    <li>verified profile can be downloaded for business use</li>
+    <li>customer image, NID image, signature, and supporting documents are visible during review</li>
+    <li>required onboarding controls can be enforced before submission</li>
+    <li>approved onboarding records can be tracked and reported</li>
+    <li>KYC review status can be tracked after account creation</li>
+  </ul>
+
+  <h2>6. Business Readiness Statement</h2>
+  <p>
+    The Digital Onboarding System onboarding module is hereby presented for sign-off to the
+    <strong>KYC Unit</strong> as the receiving business owner. By signing this document, the KYC Unit confirms that:
+  </p>
+  <ul>
+    <li>the onboarding workflow has been reviewed in the UAT environment</li>
+    <li>the delivered scope is acceptable for business handover</li>
+    <li>the module is ready to proceed to the next release or deployment stage, subject to internal approval processes</li>
+  </ul>
+
+  <h2>7. Assumptions and Dependencies</h2>
+  <p>This sign-off is based on the following assumptions:</p>
+  <ul>
+    <li>required UAT test scenarios were executed by the responsible business users</li>
+    <li>external integration endpoints available in UAT were sufficient for business validation</li>
+    <li>any remaining deployment, infrastructure, or environment-level activities will be handled separately as part of release readiness</li>
+  </ul>
+
+  <h2>8. Open Items / Remarks</h2>
+  <table class="grid">
+    <tr>
+      <th style="width:8%;">No.</th>
+      <th>Remark / Observation</th>
+      <th style="width:16%;">Owner</th>
+      <th style="width:16%;">Target Date</th>
+      <th style="width:14%;">Status</th>
+    </tr>
+    <tr><td>1</td><td>&nbsp;</td><td></td><td></td><td></td></tr>
+    <tr><td>2</td><td>&nbsp;</td><td></td><td></td><td></td></tr>
+    <tr><td>3</td><td>&nbsp;</td><td></td><td></td><td></td></tr>
+  </table>
+
+  <h2>9. Sign-Off Decision</h2>
+  <div class="decision">
+    <p>[&nbsp;&nbsp;] Approved for handover</p>
+    <p>[&nbsp;&nbsp;] Approved with minor follow-up actions</p>
+    <p>[&nbsp;&nbsp;] Not approved</p>
+    <p><strong>Comments / Conditions:</strong></p>
+    <div class="line"></div>
+    <div class="line"></div>
+    <div class="line"></div>
+  </div>
+
+  <h2>10. Sign-Off Authority</h2>
+  <h3>Receiving Business Unit</h3>
+  <table class="grid">
+    <tr>
+      <th>Role / Unit</th>
+      <th>Name</th>
+      <th>Signature</th>
+      <th>Date</th>
+    </tr>
+    <tr>
+      <td>KYC Unit Representative</td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>KYC Unit Manager / Delegate</td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+  </table>
+
+  <h3>Project / Delivery Team</h3>
+  <table class="grid">
+    <tr>
+      <th>Role</th>
+      <th>Name</th>
+      <th>Signature</th>
+      <th>Date</th>
+    </tr>
+    <tr>
+      <td>Project / Delivery Representative</td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Technical Lead / System Owner</td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+  </table>
+
+  <h2>11. Final Statement</h2>
+  <p>
+    This document serves as the formal UAT sign-off record for the Customer Onboarding / CIF &amp; Account Opening
+    module of the Digital Onboarding System and is intended to support business handover, audit reference,
+    and release governance approval.
+  </p>
+
+  <p class="footer-note">
+    End of document.
+  </p>
+</body>
+</html>
