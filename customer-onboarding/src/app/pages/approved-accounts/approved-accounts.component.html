@@ -1,0 +1,265 @@
+<section class="space-y-6">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <p class="section-eyebrow">{{ isMakerView ? 'My Requests' : 'Approved Accounts' }}</p>
+      <h2 class="approved-page-title">{{ pageTitle }}</h2>
+      <p class="approved-page-copy">{{ pageCopy }}</p>
+    </div>
+    <button class="btn-secondary btn-compact" type="button" (click)="loadRecords()">Refresh list</button>
+  </div>
+
+  <div *ngIf="pageError" class="alert-danger">{{ pageError }}</div>
+
+  <div class="panel-card approved-panel">
+    <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+      <div class="flex items-center gap-3">
+        <span class="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-800">{{ filteredRecords.length }} records</span>
+      </div>
+      <div class="flex w-full flex-col gap-3 xl:w-auto xl:flex-row xl:items-center">
+        <input class="form-input w-full xl:w-[420px]" [ngModel]="searchTerm" (ngModelChange)="updateSearch($event)" placeholder="Search by name, customer number, status, account, branch, or reference" />
+        <select class="form-input xl:w-[190px]" [ngModel]="statusFilter" (ngModelChange)="updateStatusFilter($event)">
+          <option *ngFor="let status of statusOptions" [ngValue]="status">
+            {{ status === 'ALL' ? 'All statuses' : getStatusLabel(status) }}
+          </option>
+        </select>
+        <select class="form-input xl:w-[150px]" [ngModel]="pageSize" (ngModelChange)="updatePageSize($event)">
+          <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size === -1 ? 'All / page' : (size + ' / page') }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div *ngIf="loading" class="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+      Loading onboarding records...
+    </div>
+
+    <div *ngIf="!loading && !filteredRecords.length" class="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+      {{ isMakerView ? 'No onboarding requests found yet.' : 'No completed account openings found for this branch.' }}
+    </div>
+
+    <div class="mt-6 overflow-hidden rounded-[26px] border border-slate-200 bg-white" *ngIf="!loading && filteredRecords.length">
+      <div class="approved-table-wrap">
+        <table class="approved-table">
+          <thead class="bg-slate-50">
+            <tr class="text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <th class="px-5 py-4 cursor-pointer" (click)="sortBy('customerName')">Customer Name</th>
+              <th class="px-5 py-4 cursor-pointer" (click)="sortBy('customerNumber')">Customer No</th>
+              <th class="px-5 py-4">Status</th>
+              <th class="px-5 py-4">Branch</th>
+              <th class="px-5 py-4">Class</th>
+              <th class="px-5 py-4">Amount</th>
+              <th class="px-5 py-4">Funding</th>
+              <th class="px-5 py-4">Account No</th>
+              <th class="px-5 py-4 cursor-pointer" (click)="sortBy(isMakerView ? 'submittedAtUtc' : 'reviewedAtUtc')">
+                {{ isMakerView ? 'Submitted On' : 'Approved On' }}
+              </th>
+              <th class="px-5 py-4"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let record of pagedRecords" class="border-t border-slate-100 text-sm text-slate-700">
+              <td class="px-5 py-4 font-semibold text-slate-900 approved-cell-name">{{ record.customerName }}</td>
+              <td class="px-5 py-4 whitespace-nowrap">{{ record.customerNumber }}</td>
+              <td class="px-5 py-4 whitespace-nowrap">
+                <span class="rounded-full px-3 py-1 text-xs font-semibold"
+                  [ngClass]="{
+                    'bg-amber-50 text-amber-700': record.status === 'PENDING_CHECKER_APPROVAL',
+                    'bg-emerald-50 text-emerald-700': record.status === 'ACCOUNT_CREATED',
+                    'bg-rose-50 text-rose-700': record.status === 'REJECTED' || record.status === 'FAILED',
+                    'bg-slate-100 text-slate-700': record.status !== 'PENDING_CHECKER_APPROVAL' && record.status !== 'ACCOUNT_CREATED' && record.status !== 'REJECTED' && record.status !== 'FAILED'
+                  }">
+                  {{ getStatusLabel(record.status) }}
+                </span>
+              </td>
+              <td class="px-5 py-4 whitespace-nowrap">{{ record.branchCode }}</td>
+              <td class="px-5 py-4 whitespace-nowrap">{{ record.accountClass }}</td>
+              <td class="px-5 py-4 whitespace-nowrap">{{ record.openingAmount | number:'1.2-2' }} ETB</td>
+              <td class="px-5 py-4 whitespace-nowrap">
+                {{ record.fundingSourceType === 'ACCOUNT' ? 'Account' : (record.fundingSourceType === 'GL' ? 'GL' : 'Cash') }}
+              </td>
+              <td class="px-5 py-4 whitespace-nowrap">{{ record.accountNumber || '-' }}</td>
+              <td class="px-5 py-4 whitespace-nowrap">{{ (record.reviewedAtUtc || record.submittedAtUtc) | date:'medium' }}</td>
+              <td class="px-5 py-4">
+                <button class="btn-secondary btn-compact" type="button" (click)="openDetails(record)">View</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600">
+        <p>Page {{ currentPage }} of {{ totalPages }}</p>
+        <div class="flex gap-2">
+          <button class="btn-secondary btn-compact" type="button" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1 || pageSize === -1">Previous</button>
+          <button class="btn-secondary btn-compact" type="button" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages || pageSize === -1">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4" *ngIf="selectedRecord as record">
+    <div class="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-[32px] border border-white/80 bg-white p-6 shadow-2xl">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="section-eyebrow">{{ isMakerView ? 'Request Details' : 'Record Details' }}</p>
+          <h3 class="mt-2 text-2xl font-bold text-slate-900">{{ record.customerName }}</h3>
+          <p class="mt-2 text-sm text-slate-500">
+            Customer {{ record.customerNumber }} | Status {{ getStatusLabel(record.status) }}{{ record.accountNumber ? (' | Account ' + record.accountNumber) : '' }}
+          </p>
+        </div>
+        <button class="btn-secondary btn-compact" type="button" (click)="closeDetails()">Close</button>
+      </div>
+
+      <div class="mt-6 grid gap-4 md:grid-cols-4">
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Branch</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.branchCode }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Account Class</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.accountClass }} - {{ record.accountClassName }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Opening Amount</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.openingAmount | number:'1.2-2' }} ETB</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Funding Source</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ fundingSourceLabel }}</p>
+          <p class="mt-1 text-slate-500" *ngIf="record.fundingSourceValue">{{ record.fundingSourceValue }}</p>
+        </div>
+      </div>
+
+      <div class="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1.1fr),minmax(0,0.9fr)]">
+        <div class="space-y-4">
+          <div class="checker-info-card">
+            <p class="section-eyebrow">Request Summary</p>
+            <div class="mt-3 space-y-2 text-[0.98rem] leading-8 text-slate-600">
+              <p><span class="font-semibold text-slate-900">Name:</span> {{ record.customerName }}</p>
+              <p><span class="font-semibold text-slate-900">Mobile:</span> {{ selectedAdditional?.mobileNumber || record.mobileNumber || '-' }}</p>
+              <p><span class="font-semibold text-slate-900">Email:</span> {{ selectedAdditional?.email || record.email || '-' }}</p>
+              <p><span class="font-semibold text-slate-900">Place of birth:</span> {{ selectedAdditional?.placeOfBirth || record.placeOfBirth || '-' }}</p>
+              <p><span class="font-semibold text-slate-900">ID type:</span> {{ selectedAdditional?.idType || record.idType || '-' }}</p>
+              <p><span class="font-semibold text-slate-900">Resident / Yellow card:</span> {{ selectedAdditional?.residentIdNumber || record.residentIdNumber || '-' }}</p>
+              <p><span class="font-semibold text-slate-900">TIN number:</span> {{ selectedAdditional?.tinNumber || record.tinNumber || '-' }}</p>
+              <p><span class="font-semibold text-slate-900">Guardian name:</span> {{ selectedAdditional?.guardianName || '-' }}</p>
+              <p><span class="font-semibold text-slate-900">Mother name:</span> {{ selectedAdditional?.motherName || '-' }}</p>
+              <p><span class="font-semibold text-slate-900">Occupation:</span> {{ selectedAdditional?.occupation || '-' }}</p>
+              <p><span class="font-semibold text-slate-900">Employer:</span> {{ selectedAdditional?.employer || '-' }}</p>
+              <p><span class="font-semibold text-slate-900">Work position:</span> {{ selectedAdditional?.workPosition || '-' }}</p>
+              <p><span class="font-semibold text-slate-900">Monthly income:</span> {{ selectedAdditional?.monthlyIncome ? (selectedAdditional?.monthlyIncome | number:'1.0-0') + ' ETB' : '-' }}</p>
+              <p><span class="font-semibold text-slate-900">Submitted on:</span> {{ record.submittedAtUtc | date:'medium' }}</p>
+              <p *ngIf="record.reviewedAtUtc"><span class="font-semibold text-slate-900">Reviewed on:</span> {{ record.reviewedAtUtc | date:'medium' }}</p>
+              <p *ngIf="record.checkerComment"><span class="font-semibold text-slate-900">Checker note:</span> {{ record.checkerComment }}</p>
+              <p *ngIf="record.lastError"><span class="font-semibold text-slate-900">Latest issue:</span> {{ record.lastError }}</p>
+            </div>
+          </div>
+
+          <div class="checker-ready-card">
+            <p class="section-eyebrow text-emerald-700">Saved assets</p>
+            <div class="mt-3 flex flex-wrap gap-3 text-sm">
+              <span class="rounded-full bg-white px-4 py-2 font-semibold shadow-sm" [ngClass]="record.hasCustomerPhoto ? 'text-emerald-700' : 'text-slate-500'">Customer photo uploaded</span>
+              <span class="rounded-full bg-white px-4 py-2 font-semibold shadow-sm" [ngClass]="record.hasSignature ? 'text-emerald-700' : 'text-slate-500'">Signature uploaded</span>
+              <span class="rounded-full bg-white px-4 py-2 font-semibold shadow-sm" [ngClass]="record.hasRequiredDocuments ? 'text-emerald-700' : 'text-slate-500'">Supporting documents saved</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div class="checker-info-card">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p class="section-eyebrow">Verified Profile</p>
+                <p class="mt-2 text-sm text-slate-500">Open the identity and uploaded assets at readable size before downloading or reviewing the request.</p>
+              </div>
+              <button class="btn-secondary btn-compact" type="button" [disabled]="downloadingProfile" (click)="downloadVerifiedProfile()">
+                {{ downloadingProfile ? 'Preparing...' : 'Download Profile' }}
+              </button>
+            </div>
+
+            <div class="mt-5 grid gap-4 md:grid-cols-3">
+              <div class="metric-card">
+                <p class="text-sm text-slate-500">NID photo</p>
+                <button type="button" class="mt-4 flex h-44 w-full items-center justify-center overflow-hidden rounded-[20px] bg-slate-100 p-3 transition hover:bg-slate-50" (click)="openAssetViewer('NID photo', nidPhotoPreview, 'image/png')" [disabled]="!nidPhotoPreview">
+                  <img *ngIf="nidPhotoPreview" [src]="nidPhotoPreview" alt="NID photo" class="h-full w-full object-contain" />
+                  <p *ngIf="!nidPhotoPreview" class="px-4 text-center text-sm text-slate-500">No photo returned from NID</p>
+                </button>
+              </div>
+              <div class="metric-card">
+                <p class="text-sm text-slate-500">Customer photo</p>
+                <button type="button" class="mt-4 flex h-44 w-full items-center justify-center overflow-hidden rounded-[20px] bg-slate-100 p-3 transition hover:bg-slate-50" (click)="openAssetViewer('Customer photo', uploadedPhotoPreview, 'image/jpeg')" [disabled]="!uploadedPhotoPreview">
+                  <img *ngIf="uploadedPhotoPreview" [src]="uploadedPhotoPreview" alt="Customer photo" class="h-full w-full object-contain" />
+                  <p *ngIf="!uploadedPhotoPreview" class="px-4 text-center text-sm text-slate-500">No uploaded customer photo</p>
+                </button>
+              </div>
+              <div class="metric-card">
+                <p class="text-sm text-slate-500">Signature</p>
+                <button type="button" class="mt-4 flex h-44 w-full items-center justify-center overflow-hidden rounded-[20px] bg-slate-100 p-3 transition hover:bg-slate-50" (click)="openAssetViewer('Signature', signaturePreview, 'image/jpeg')" [disabled]="!signaturePreview">
+                  <img *ngIf="signaturePreview" [src]="signaturePreview" alt="Signature" class="h-full w-full object-contain" />
+                  <p *ngIf="!signaturePreview" class="px-4 text-center text-sm text-slate-500">No uploaded signature</p>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="checker-info-card">
+            <p class="section-eyebrow">Uploaded Documents</p>
+            <div class="mt-4 grid gap-4 md:grid-cols-2" *ngIf="selectedDocuments.length; else noDocuments">
+              <div *ngFor="let document of selectedDocuments" class="metric-card">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-semibold text-slate-900">{{ document.displayName }}</p>
+                    <p class="mt-1 text-sm text-slate-500">{{ document.fileName }}</p>
+                  </div>
+                  <span class="rounded-full bg-brand-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-700">
+                    {{ isPdfMimeType(document.mimeType) ? 'PDF' : (isImageMimeType(document.mimeType) ? 'Image' : 'File') }}
+                  </span>
+                </div>
+                <button type="button" class="mt-4 flex h-44 w-full items-center justify-center overflow-hidden rounded-[20px] border border-slate-200 bg-slate-50 p-3 text-left transition hover:border-brand-200 hover:bg-white" (click)="openDocumentViewer(document)">
+                  <img *ngIf="isImageMimeType(document.mimeType)" [src]="getDocumentUrl(document)" [alt]="document.displayName" class="h-full w-full object-contain" />
+                  <div *ngIf="isPdfMimeType(document.mimeType)" class="flex h-full w-full flex-col items-center justify-center rounded-[16px] border border-dashed border-slate-300 bg-white text-center">
+                    <p class="text-sm font-semibold text-slate-700">PDF document</p>
+                    <p class="mt-2 px-4 text-xs text-slate-500">Click to open a full preview.</p>
+                  </div>
+                  <div *ngIf="!isImageMimeType(document.mimeType) && !isPdfMimeType(document.mimeType)" class="flex h-full w-full flex-col items-center justify-center rounded-[16px] border border-dashed border-slate-300 bg-white text-center">
+                    <p class="text-sm font-semibold text-slate-700">Document file</p>
+                    <p class="mt-2 px-4 text-xs text-slate-500">Click to view or download this attachment.</p>
+                  </div>
+                </button>
+                <div class="mt-3 flex justify-end">
+                  <button type="button" class="btn-secondary btn-compact" (click)="downloadDocument(document)">Download</button>
+                </div>
+              </div>
+            </div>
+            <ng-template #noDocuments>
+              <div class="mt-4 rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                No supporting documents were saved with this request.
+              </div>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div *ngIf="isViewerOpen()" class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 p-4" (click)="closeViewer()">
+  <div class="max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-[28px] bg-white shadow-2xl" (click)="$event.stopPropagation()">
+    <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+      <div>
+        <p class="text-sm font-semibold uppercase tracking-[0.2em] text-brand-700">Preview</p>
+        <h3 class="mt-1 text-xl font-bold text-slate-900">{{ viewerTitle }}</h3>
+      </div>
+      <button type="button" class="btn-secondary btn-compact" (click)="closeViewer()">Close</button>
+    </div>
+    <div class="max-h-[78vh] overflow-auto bg-slate-50 p-5">
+      <img *ngIf="isImageMimeType(viewerMimeType)" [src]="viewerUrl" [alt]="viewerTitle" class="mx-auto max-h-[72vh] w-auto max-w-full rounded-[22px] bg-white p-2 shadow-sm" />
+      <iframe *ngIf="isPdfMimeType(viewerMimeType)" [src]="viewerResourceUrl" title="Document preview" class="h-[72vh] w-full rounded-[22px] border border-slate-200 bg-white"></iframe>
+      <div *ngIf="!isImageMimeType(viewerMimeType) && !isPdfMimeType(viewerMimeType)" class="flex min-h-[22rem] items-center justify-center rounded-[22px] border border-dashed border-slate-300 bg-white px-6 text-center">
+        <div>
+          <p class="text-lg font-semibold text-slate-900">Preview not available for this file type.</p>
+          <p class="mt-2 text-sm text-slate-500">Use the download button to open the original file.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

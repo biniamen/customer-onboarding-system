@@ -1,0 +1,279 @@
+<div class="space-y-7" *ngIf="profile as customer">
+  <div>
+    <p class="section-eyebrow">Step 4</p>
+    <h2 class="section-title max-w-4xl">Prepare account opening</h2>
+    <p class="section-copy max-w-3xl">
+      Select the account type, upload the customer photo and signature, and send the request for approval.
+    </p>
+  </div>
+
+  <div *ngIf="pageError" class="status-card error">{{ pageError }}</div>
+  <div *ngIf="uploadSuccessMessage" class="status-card success">{{ uploadSuccessMessage }}</div>
+  <div *ngIf="approvalRecord" class="status-card success">
+    Case {{ approvalRecord.caseReference }} was submitted successfully and is waiting for checker approval.
+  </div>
+
+  <div class="grid gap-6 2xl:grid-cols-[minmax(0,1.1fr),minmax(0,0.9fr)]">
+    <form class="panel-card" [formGroup]="form" novalidate>
+      <div class="mb-6 grid gap-4 lg:grid-cols-3">
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Customer number</p>
+          <p class="mt-2 text-xl font-bold text-slate-900">{{ customerNumber }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Customer name</p>
+          <p class="mt-2 text-xl font-bold text-slate-900">{{ customer.fullName }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Branch</p>
+          <p class="mt-2 text-xl font-bold text-slate-900">{{ branchCode }}</p>
+        </div>
+      </div>
+
+      <div class="grid gap-5 xl:grid-cols-2">
+        <div>
+          <label class="field-label" for="accountClass">Account Class</label>
+          <select id="accountClass" class="select-field" formControlName="accountClass" [disabled]="loadingAccountClasses || !accountClasses.length">
+            <option *ngFor="let accountClass of accountClasses" [value]="accountClass.code">
+              {{ accountClass.code }} - {{ accountClass.name }}
+            </option>
+          </select>
+          <p class="mt-2 text-sm text-slate-500" *ngIf="loadingAccountClasses">Loading account classes from FCUBS...</p>
+          <p class="mt-2 text-sm text-rose-600" *ngIf="!loadingAccountClasses && !accountClasses.length">
+            Account classes are not available right now. Refresh and try again.
+          </p>
+        </div>
+
+        <div>
+          <label class="field-label" for="openingAmount">Opening Amount</label>
+          <input id="openingAmount" type="number" class="input-field" formControlName="openingAmount" placeholder="100" />
+          <p class="mt-2 text-sm text-slate-500" *ngIf="selectedAccountClassOption">
+            Minimum opening amount for {{ selectedAccountClassOption.code }} is
+            {{ minimumOpeningAmount | number:'1.0-2' }} {{ selectedAccountCurrencyCode }}.
+          </p>
+          <p *ngIf="form.controls.openingAmount.touched && form.controls.openingAmount.invalid" class="mt-2 text-sm text-rose-600">
+            Enter at least {{ minimumOpeningAmount | number:'1.0-2' }} {{ selectedAccountCurrencyCode }} for the selected account class.
+          </p>
+        </div>
+
+        <div>
+          <label class="field-label" for="fundingSourceType">Funding Source</label>
+          <div class="metric-card mt-1">
+            <p class="text-base font-semibold text-slate-900">Cash</p>
+            <p class="mt-2 text-sm text-slate-500">
+              Opening amount will be processed as cash funding for this onboarding request.
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <label class="field-label" for="customerImage">Customer Photo</label>
+          <input id="customerImage" type="file" class="input-field p-3" accept="image/*" (change)="onImageSelected($event)" />
+        </div>
+
+        <div>
+          <label class="field-label" for="customerSignature">Customer Signature</label>
+          <input id="customerSignature" type="file" class="input-field p-3" accept="image/*" (change)="onSignatureSelected($event)" />
+        </div>
+
+        <div class="xl:col-span-2 rounded-[26px] border border-brand-100 bg-gradient-to-r from-brand-50/70 via-white to-accent-50/50 p-5">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-700">Branch Supporting Documents</p>
+              <p class="mt-1 text-sm text-slate-500">These files stay in this onboarding application for branch review. Only the customer photo and signature are sent to CBS.</p>
+            </div>
+            <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
+              {{ localDocuments['APPLICATION_FORM'] || localDocuments['SUPPORTING_KYC'] || optionalDocuments.length ? 'Documents attached' : 'Optional for submission' }}
+            </span>
+          </div>
+
+          <div class="mt-5 grid gap-4 lg:grid-cols-2">
+            <div class="metric-card">
+              <p class="text-sm font-semibold text-slate-900">Application Form</p>
+              <p class="mt-1 text-sm text-slate-500">Optional branch filing document kept inside this application.</p>
+              <input type="file" class="input-field mt-4 p-3" accept=".pdf,.jpg,.jpeg,.png" (change)="onRequiredDocumentSelected($event, 'APPLICATION_FORM', 'Application Form')" />
+              <p class="mt-3 text-sm font-semibold text-slate-700">{{ localDocuments['APPLICATION_FORM']?.fileName || 'No file selected yet' }}</p>
+            </div>
+
+            <div class="metric-card">
+              <p class="text-sm font-semibold text-slate-900">Supporting KYC Document</p>
+              <p class="mt-1 text-sm text-slate-500">Optional supporting file for branch-side KYC review.</p>
+              <input type="file" class="input-field mt-4 p-3" accept=".pdf,.jpg,.jpeg,.png" (change)="onRequiredDocumentSelected($event, 'SUPPORTING_KYC', 'Supporting KYC Document')" />
+              <p class="mt-3 text-sm font-semibold text-slate-700">{{ localDocuments['SUPPORTING_KYC']?.fileName || 'No file selected yet' }}</p>
+            </div>
+          </div>
+
+          <div class="mt-5 grid gap-4 xl:grid-cols-2">
+            <div *ngFor="let optionalDocument of optionalDocumentCategories" class="metric-card">
+              <p class="text-sm font-semibold text-slate-900">{{ optionalDocument.displayName }}</p>
+              <p class="mt-1 text-sm text-slate-500">Optional document category for additional KYC support.</p>
+              <input type="file" class="input-field mt-4 p-3" accept=".pdf,.jpg,.jpeg,.png" (change)="onOptionalDocumentSelected($event, optionalDocument.category, optionalDocument.displayName)" />
+              <div class="mt-3 flex items-center justify-between gap-3">
+                <p class="text-sm font-semibold text-slate-700">
+                  {{ getOptionalDocument(optionalDocument.category)?.fileName || 'No file selected' }}
+                </p>
+                <button
+                  *ngIf="getOptionalDocument(optionalDocument.category)"
+                  type="button"
+                  class="btn-secondary btn-compact"
+                  (click)="removeOptionalDocument(optionalDocument.category)">
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <button type="button" class="btn-primary" [disabled]="uploading" (click)="uploadAssets()">
+          {{ uploading ? 'Uploading...' : 'Upload Image & Signature' }}
+        </button>
+        <button type="button" class="btn-secondary" [disabled]="!approvalReady || submittingApproval || !!approvalRecord" (click)="submitForApproval()">
+          {{ submittingApproval ? 'Submitting...' : 'Submit For Checker Approval' }}
+        </button>
+      </div>
+    </form>
+
+    <div class="space-y-6">
+      <div class="panel-card bg-gradient-to-r from-accent-50 via-white to-brand-50/70">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-700">Preview</p>
+        <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="metric-card">
+            <p class="text-sm text-slate-500">Selected account class</p>
+            <p class="mt-2 font-semibold text-slate-900">{{ selectedAccountClassName || 'Not selected' }}</p>
+          </div>
+          <div class="metric-card">
+            <p class="text-sm text-slate-500">Funding source</p>
+            <p class="mt-2 font-semibold text-slate-900">Cash</p>
+          </div>
+          <div class="metric-card">
+            <p class="text-sm text-slate-500">NID photo</p>
+            <p class="mt-2 font-semibold text-slate-900">{{ nidPhotoPreview ? 'Visible for checker' : 'Not returned from NID' }}</p>
+          </div>
+        </div>
+
+        <div class="mt-5 rounded-[24px] border border-emerald-200 bg-emerald-50 p-5" *ngIf="uploadPreviewReady">
+        <p class="text-sm font-semibold text-emerald-800">Ready for review</p>
+        <p class="mt-2 text-sm leading-7 text-emerald-700">
+            Customer photo and signature are uploaded to CBS, and the request is ready to submit.
+        </p>
+        </div>
+
+        <div class="mt-5 grid gap-4 sm:grid-cols-2">
+          <div class="metric-card">
+            <p class="text-sm text-slate-500">NID photo preview</p>
+            <button type="button" class="mt-4 flex h-48 w-full items-center justify-center overflow-hidden rounded-[24px] bg-slate-100 p-3 transition hover:bg-slate-50" (click)="openAssetViewer('NID photo preview', nidPhotoPreview, 'image/png')" [disabled]="!nidPhotoPreview">
+              <img *ngIf="nidPhotoPreview" [src]="nidPhotoPreview" alt="NID photo preview" class="h-full w-full object-contain" />
+              <p *ngIf="!nidPhotoPreview" class="text-sm text-slate-500">No photo returned from NID</p>
+            </button>
+          </div>
+          <div class="metric-card">
+            <p class="text-sm text-slate-500">Customer photo preview</p>
+            <button type="button" class="mt-4 flex h-48 w-full items-center justify-center overflow-hidden rounded-[24px] bg-slate-100 p-3 transition hover:bg-slate-50" (click)="openAssetViewer('Customer photo preview', selectedImagePreview, 'image/jpeg')" [disabled]="!selectedImagePreview">
+              <img *ngIf="selectedImagePreview" [src]="selectedImagePreview" alt="Customer preview" class="h-full w-full object-contain" />
+              <p *ngIf="!selectedImagePreview" class="text-sm text-slate-500">Upload image to preview</p>
+            </button>
+          </div>
+          <div class="metric-card">
+            <p class="text-sm text-slate-500">Signature preview</p>
+            <button type="button" class="mt-4 flex h-48 w-full items-center justify-center overflow-hidden rounded-[24px] bg-slate-100 p-3 transition hover:bg-slate-50" (click)="openAssetViewer('Signature preview', selectedSignaturePreview, 'image/jpeg')" [disabled]="!selectedSignaturePreview">
+              <img *ngIf="selectedSignaturePreview" [src]="selectedSignaturePreview" alt="Signature preview" class="h-full w-full object-contain" />
+              <p *ngIf="!selectedSignaturePreview" class="text-sm text-slate-500">Upload signature to preview</p>
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-5 rounded-[24px] border border-slate-200 bg-white p-5">
+          <p class="text-sm font-semibold text-slate-900">Document checklist</p>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+          <div class="metric-card">
+            <p class="text-sm text-slate-500">Application form</p>
+            <p class="mt-2 font-semibold text-slate-900">{{ localDocuments['APPLICATION_FORM']?.fileName || 'Not attached' }}</p>
+          </div>
+          <div class="metric-card">
+            <p class="text-sm text-slate-500">Supporting KYC document</p>
+            <p class="mt-2 font-semibold text-slate-900">{{ localDocuments['SUPPORTING_KYC']?.fileName || 'Not attached' }}</p>
+          </div>
+        </div>
+          <div class="mt-4" *ngIf="optionalDocuments.length">
+            <p class="text-sm font-semibold text-slate-900">Optional attachments</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <span *ngFor="let document of optionalDocuments" class="rounded-full bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-800">
+                {{ document.displayName }}: {{ document.fileName }}
+              </span>
+            </div>
+          </div>
+
+          <div class="mt-5" *ngIf="allSupportingDocuments.length">
+            <p class="text-sm font-semibold text-slate-900">Attachment preview</p>
+            <div class="mt-3 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <button
+                *ngFor="let document of allSupportingDocuments"
+                type="button"
+                class="metric-card text-left transition hover:border-brand-200 hover:shadow-md"
+                (click)="openDocumentViewer(document)">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-semibold text-slate-900">{{ document.displayName }}</p>
+                    <p class="mt-1 text-xs text-slate-500">{{ document.fileName }}</p>
+                  </div>
+                  <span class="rounded-full bg-brand-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-700">
+                    {{ isPdfMimeType(document.mimeType) ? 'PDF' : (isImageMimeType(document.mimeType) ? 'Image' : 'File') }}
+                  </span>
+                </div>
+                <div class="mt-4 flex h-44 items-center justify-center overflow-hidden rounded-[20px] border border-slate-200 bg-slate-50 p-3">
+                  <img *ngIf="isImageMimeType(document.mimeType)" [src]="getDocumentUrl(document)" [alt]="document.displayName" class="h-full w-full object-contain" />
+                  <div *ngIf="isPdfMimeType(document.mimeType)" class="flex h-full w-full flex-col items-center justify-center rounded-[16px] border border-dashed border-slate-300 bg-white text-center">
+                    <p class="text-sm font-semibold text-slate-700">PDF document</p>
+                    <p class="mt-2 px-4 text-xs text-slate-500">Click to open a readable preview.</p>
+                  </div>
+                  <div *ngIf="!isImageMimeType(document.mimeType) && !isPdfMimeType(document.mimeType)" class="flex h-full w-full flex-col items-center justify-center rounded-[16px] border border-dashed border-slate-300 bg-white text-center">
+                    <p class="text-sm font-semibold text-slate-700">Document file</p>
+                    <p class="mt-2 px-4 text-xs text-slate-500">Click to view or download this attachment.</p>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card" *ngIf="approvalRecord as approval">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-600">Approval handoff</p>
+        <div class="mt-4 grid gap-4">
+          <div class="metric-card">
+            <p class="text-sm text-slate-500">Case reference</p>
+            <p class="mt-2 text-xl font-bold text-slate-900">{{ approval.caseReference }}</p>
+          </div>
+          <div class="metric-card">
+            <p class="text-sm text-slate-500">Current status</p>
+            <p class="mt-2 text-xl font-bold text-slate-900">{{ approval.status }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="isViewerOpen()" class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 p-4" (click)="closeAssetViewer()">
+  <div class="max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-[28px] bg-white shadow-2xl" (click)="$event.stopPropagation()">
+    <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+      <div>
+        <p class="text-sm font-semibold uppercase tracking-[0.2em] text-brand-700">Preview</p>
+        <h3 class="mt-1 text-xl font-bold text-slate-900">{{ viewerTitle }}</h3>
+      </div>
+      <button type="button" class="btn-secondary btn-compact" (click)="closeAssetViewer()">Close</button>
+    </div>
+    <div class="max-h-[78vh] overflow-auto bg-slate-50 p-5">
+      <img *ngIf="isImageMimeType(viewerMimeType)" [src]="viewerUrl" [alt]="viewerTitle" class="mx-auto max-h-[72vh] w-auto max-w-full rounded-[22px] bg-white p-2 shadow-sm" />
+      <iframe *ngIf="isPdfMimeType(viewerMimeType)" [src]="viewerResourceUrl" title="Document preview" class="h-[72vh] w-full rounded-[22px] border border-slate-200 bg-white"></iframe>
+      <div *ngIf="!isImageMimeType(viewerMimeType) && !isPdfMimeType(viewerMimeType)" class="flex min-h-[22rem] items-center justify-center rounded-[22px] border border-dashed border-slate-300 bg-white px-6 text-center">
+        <div>
+          <p class="text-lg font-semibold text-slate-900">Preview not available for this file type.</p>
+          <p class="mt-2 text-sm text-slate-500">Use the checker download action if you need the original file outside the application.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

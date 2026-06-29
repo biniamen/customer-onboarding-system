@@ -1,0 +1,66 @@
+<main class="min-h-screen">
+  <app-toast-stack></app-toast-stack>
+  <section *ngIf="showLoginLayout" class="mx-auto max-w-[1380px] px-3 py-3 sm:px-4 lg:px-5">
+    <router-outlet></router-outlet>
+  </section>
+
+  <section *ngIf="!showLoginLayout" class="mx-auto max-w-[1380px] px-3 py-3 sm:px-4 lg:px-5">
+    <div class="overflow-hidden rounded-[28px] border border-white/80 bg-white/60 shadow-panel backdrop-blur">
+      <div class="grid gap-0 xl:grid-cols-[260px,1fr] 2xl:grid-cols-[280px,1fr]">
+        <aside class="relative overflow-hidden bg-[#0b3f22] px-4 py-5 text-white">
+          <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(235,171,35,0.42),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(255,255,255,0.08),_transparent_30%),linear-gradient(180deg,_#0b4a26_0%,_#07522a_100%)]"></div>
+          <div class="relative">
+            <div class="mb-6 inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-amber-100">
+              Global Bank Ethiopia
+            </div>
+            <h1 class="max-w-xs text-[2.1rem] font-extrabold leading-[1.08]">
+              {{ shellTitle }}
+            </h1>
+            <p class="mt-3 max-w-xs text-[0.92rem] leading-7 text-emerald-50/85">
+              {{ shellCopy }}
+            </p>
+
+            <div *ngIf="showStepper" class="mt-8 rounded-[24px] border border-white/10 bg-white/8 p-4">
+              <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-amber-100/80">Journey</p>
+              <app-stepper class="mt-4 block" [steps]="steps" [currentRoute]="currentRoute"></app-stepper>
+            </div>
+
+            <div class="mt-6 rounded-[24px] border border-white/10 bg-white/8 p-4 text-[0.92rem] text-emerald-50/85">
+              <p class="font-semibold text-white">Quick tip</p>
+              <p class="mt-2 leading-7">
+                {{ showStepper ? 'Confirm each step before moving forward.' : 'Approve only fully prepared requests.' }}
+              </p>
+            </div>
+          </div>
+        </aside>
+
+        <section class="min-w-0 px-3 py-3 sm:px-5 sm:py-5 lg:px-6 xl:px-7">
+          <div class="mb-4 flex flex-col gap-3 rounded-[20px] border border-slate-200/80 bg-white/80 px-4 py-3 shadow-soft sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+              <img [src]="logoPath" alt="Global Bank Ethiopia logo" class="operator-logo" />
+              <div>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Logged in operator</p>
+              <p class="mt-1 text-[1.05rem] font-semibold text-slate-900">{{ currentUser?.fullName || 'User' }}</p>
+              <p class="text-[0.9rem] text-slate-500">{{ currentUser?.username }} | {{ currentUser?.role }} | Branch {{ currentUser?.branchCode }}{{ currentUser?.branchName ? (' - ' + currentUser?.branchName) : '' }}</p>
+              </div>
+            </div>
+            <button class="btn-secondary" type="button" (click)="logout()">Logout</button>
+          </div>
+          <div class="menu-bar mb-4" *ngIf="showOperationsNav">
+            <a routerLink="/workspace" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="menu-item">Home</a>
+            <a routerLink="/checker-dashboard" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'CHECKER'">Onboarding Queue</a>
+            <a routerLink="/telebirr-approvals" routerLinkActive="active" class="menu-item" *ngIf="telebirrEnabled && currentUser?.role === 'CHECKER'">Telebirr Queue</a>
+            <a routerLink="/onboarding-report" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'REPORT_VIEWER' || currentUser?.role === 'KYC_UNIT'">Onboarding Report</a>
+            <a routerLink="/telebirr-report" routerLinkActive="active" class="menu-item" *ngIf="telebirrEnabled">Telebirr Report</a>
+            <a routerLink="/approved-accounts" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'MAKER' || currentUser?.role === 'CHECKER'">Approved Accounts</a>
+            <a routerLink="/fan-verification" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'MAKER'">Onboarding</a>
+            <a routerLink="/telebirr-transfer" routerLinkActive="active" class="menu-item" *ngIf="telebirrEnabled && currentUser?.role === 'MAKER'">Telebirr Transfer</a>
+            <a routerLink="/user-management" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN'">User Management</a>
+            <a routerLink="/change-password" routerLinkActive="active" class="menu-item">Change Password</a>
+          </div>
+          <router-outlet></router-outlet>
+        </section>
+      </div>
+    </div>
+  </section>
+</main>

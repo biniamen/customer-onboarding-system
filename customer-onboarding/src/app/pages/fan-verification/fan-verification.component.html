@@ -1,0 +1,97 @@
+<div class="space-y-7">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <div>
+      <p class="section-eyebrow">Step 1</p>
+      <h2 class="section-title max-w-4xl">Verify FAN and load customer details</h2>
+      <p class="section-copy max-w-3xl">
+        Enter the customer FAN, confirm the OTP, and continue once the identity check is successful.
+      </p>
+    </div>
+    <div class="inline-flex items-center rounded-full border border-brand-200 bg-gradient-to-r from-brand-50 to-accent-50 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-700">
+      IDA verification
+    </div>
+  </div>
+
+  <div *ngIf="apiError" class="status-card error">{{ apiError }}</div>
+  <div *ngIf="apiSuccess" class="status-card success">{{ apiSuccess }}</div>
+
+  <div class="grid gap-5 2xl:grid-cols-[minmax(0,1.55fr),320px]">
+    <form class="panel-card" [formGroup]="form" novalidate>
+      <div class="soft-panel">
+        <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-600">Verification entry</p>
+            <h3 class="mt-1.5 text-[1.6rem] font-bold text-slate-900">Customer FAN lookup</h3>
+          </div>
+          <p class="text-[0.9rem] text-slate-500">Use the 16-digit FAN.</p>
+        </div>
+
+        <label class="field-label" for="fan">FAN Number</label>
+        <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr),180px]">
+          <div class="flex-1">
+            <input
+              id="fan"
+              class="input-field tracking-[0.24em]"
+              formControlName="fan"
+              maxlength="16"
+              placeholder="Enter 16-digit FAN"
+              (input)="onFanInput($event)"
+            />
+            <p *ngIf="f.fan.touched && f.fan.invalid" class="mt-2 text-sm text-rose-600">
+              A valid 16-digit FAN is required.
+            </p>
+          </div>
+          <button type="button" class="btn-primary md:min-w-[160px]" [disabled]="sending" (click)="sendFanOtp()">
+            {{ sending ? 'Sending OTP...' : 'Send OTP' }}
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="showOtpSection" class="mt-7 soft-panel bg-gradient-to-br from-brand-50 via-white to-accent-50/50">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-xl font-bold text-slate-900">OTP validation</h3>
+            <p class="mt-1 text-sm text-slate-600">
+              Transaction ID: <span class="font-semibold text-slate-800">{{ txnId }}</span>
+            </p>
+            <p class="mt-1 text-sm text-slate-600">
+              Delivery channels:
+              <span class="font-semibold text-slate-800">{{ maskedMobile || 'phone not returned' }}</span>
+              <span *ngIf="maskedEmail">, {{ maskedEmail }}</span>
+            </p>
+          </div>
+          <button type="button" class="btn-secondary" (click)="editFan()">Edit FAN</button>
+        </div>
+
+        <div class="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr),170px,210px] xl:items-end">
+          <div>
+            <label class="field-label" for="otp">OTP Code</label>
+            <input
+              id="otp"
+              class="input-field tracking-[0.24em]"
+              formControlName="otp"
+              maxlength="6"
+              placeholder="6-digit OTP"
+              (input)="onOtpInput($event)"
+            />
+            <p *ngIf="f.otp.touched && f.otp.invalid" class="mt-2 text-sm text-rose-600">
+              Enter the 6-digit OTP sent to the customer.
+            </p>
+          </div>
+          <button type="button" class="btn-secondary" [disabled]="sending" (click)="resend()">Resend OTP</button>
+          <button type="button" class="btn-primary" [disabled]="verifying" (click)="verifyFanOtp()">
+            {{ verifying ? 'Verifying...' : 'Verify & Continue' }}
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <div class="panel-card bg-gradient-to-br from-accent-900 via-accent-700 to-brand-500 text-white">
+      <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-100">Tip</p>
+      <div class="mt-4 rounded-[20px] bg-white/10 p-4 backdrop-blur">
+        <p class="font-semibold text-white">Continue after OTP confirmation.</p>
+        <p class="mt-2 text-[0.9rem] leading-7 text-emerald-50/90">The next step opens once the customer identity is confirmed.</p>
+      </div>
+    </div>
+  </div>
+</div>

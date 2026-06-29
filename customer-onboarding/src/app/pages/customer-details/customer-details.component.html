@@ -1,0 +1,209 @@
+<div class="space-y-7" *ngIf="profile as customer">
+  <div>
+    <p class="section-eyebrow">Step 2</p>
+    <h2 class="section-title">Complete customer details</h2>
+    <p class="section-copy max-w-3xl">
+      Review the customer information and complete the remaining required fields.
+    </p>
+  </div>
+
+  <div class="grid gap-6 2xl:grid-cols-[minmax(0,0.96fr),minmax(0,1.24fr)]">
+    <div class="space-y-6">
+      <div class="panel-card">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-600">Verified profile</p>
+            <h3 class="mt-1.5 text-[1.55rem] font-bold text-slate-900">{{ customer.fullName }}</h3>
+            <p class="mt-2 text-[0.9rem] text-slate-600">ID reference: <span class="font-semibold text-slate-800">{{ customer.psut || customer.nationalId }}</span></p>
+          </div>
+          <div class="rounded-full bg-gradient-to-r from-brand-100 to-accent-100 px-4 py-2 text-sm font-semibold text-accent-700">
+            {{ customer.minor ? 'Minor profile' : 'Adult profile' }}
+          </div>
+        </div>
+
+        <div class="mt-6 grid gap-5 lg:grid-cols-[220px,minmax(0,1fr)]">
+          <div class="rounded-[28px] border border-brand-100 bg-gradient-to-br from-brand-50 via-white to-accent-50/60 p-4">
+            <p class="text-xs font-semibold uppercase tracking-[0.22em] text-brand-700">NID Photo</p>
+            <div class="mt-4 flex h-[240px] items-center justify-center overflow-hidden rounded-[22px] bg-slate-100">
+              <img *ngIf="nidPhotoPreview" [src]="nidPhotoPreview" alt="Verified customer photo" class="h-full w-full object-cover" />
+              <p *ngIf="!nidPhotoPreview" class="px-4 text-center text-sm text-slate-500">Fayda photo was not returned in the current response.</p>
+            </div>
+            <button type="button" class="btn-secondary mt-4 w-full" [disabled]="exportingProfile" (click)="downloadVerifiedProfile()">
+              {{ exportingProfile ? 'Preparing profile...' : 'Download Verified Profile' }}
+            </button>
+          </div>
+
+          <div>
+            <dl class="grid gap-4 sm:grid-cols-2">
+              <div class="metric-card">
+                <dt class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Date of birth</dt>
+                <dd class="mt-2 text-sm font-semibold text-slate-900">{{ customer.dateOfBirth }}</dd>
+              </div>
+              <div class="metric-card">
+                <dt class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Gender</dt>
+                <dd class="mt-2 text-sm font-semibold text-slate-900">{{ customer.gender }}</dd>
+              </div>
+              <div class="metric-card">
+                <dt class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Email returned</dt>
+                <dd class="mt-2 text-sm font-semibold text-slate-900">{{ customer.email || 'Not returned from NID' }}</dd>
+              </div>
+              <div class="metric-card">
+                <dt class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Region / location</dt>
+                <dd class="mt-2 text-sm font-semibold text-slate-900">{{ customer.regionName }} ({{ customer.regionCode }})</dd>
+              </div>
+            </dl>
+
+            <div class="mt-6 soft-panel">
+              <p class="text-sm font-semibold text-slate-900">Address information</p>
+              <p class="mt-3 text-sm leading-7 text-slate-600">
+                {{ customer.addressLine1 }}, {{ customer.addressLine2 }}, {{ customer.addressLine3 }}, {{ customer.addressLine4 }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card bg-gradient-to-r from-brand-50 via-white to-accent-50/60">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-700">Income overview</p>
+        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+          <div class="metric-card">
+            <p class="text-sm text-slate-500">Monthly income</p>
+            <p class="mt-2 text-2xl font-bold text-slate-900">
+              {{ form.controls.monthlyIncome.value ? ((form.controls.monthlyIncome.value || 0) | number:'1.0-0') + ' ETB' : 'Not provided' }}
+            </p>
+          </div>
+          <div class="metric-card">
+            <p class="text-sm text-slate-500">Average annual income</p>
+            <p class="mt-2 text-2xl font-bold text-slate-900">{{ annualIncome ? ((annualIncome | number:'1.0-0') + ' ETB') : 'Not provided' }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form class="panel-card" [formGroup]="form" novalidate>
+      <div class="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-600">Required details</p>
+          <h3 class="mt-1.5 text-[1.55rem] font-bold text-slate-900">Complete the form</h3>
+        </div>
+        <p class="text-[0.9rem] text-slate-500">Fill all required fields before continuing.</p>
+      </div>
+
+      <div class="grid gap-5 xl:grid-cols-2">
+        <div class="md:col-span-2">
+          <label class="field-label" for="motherName">Mother Name</label>
+          <input id="motherName" class="input-field" formControlName="motherName" placeholder="Enter mother name" />
+        </div>
+
+        <div>
+          <label class="field-label" for="occupation">Occupation</label>
+          <input id="occupation" class="input-field" formControlName="occupation" placeholder="Occupation" />
+        </div>
+
+        <div>
+          <label class="field-label" for="workPosition">Work Position</label>
+          <input id="workPosition" class="input-field" formControlName="workPosition" placeholder="Work position" />
+        </div>
+
+        <div>
+          <label class="field-label" for="mobileNumber">Mobile Number</label>
+          <input id="mobileNumber" class="input-field" formControlName="mobileNumber" placeholder="09XXXXXXXX" />
+          <p *ngIf="form.controls.mobileNumber.touched && form.controls.mobileNumber.invalid" class="mt-2 text-sm text-rose-600">
+            Enter a valid Ethiopian mobile number.
+          </p>
+        </div>
+
+        <div>
+          <label class="field-label" for="email">Email Address</label>
+          <input id="email" class="input-field" formControlName="email" placeholder="customer@example.com" />
+          <p *ngIf="form.controls.email.touched && form.controls.email.value && form.controls.email.invalid" class="mt-2 text-sm text-rose-600">
+            Enter a valid email address.
+          </p>
+        </div>
+
+        <div>
+          <label class="field-label" for="placeOfBirth">Place of Birth</label>
+          <input id="placeOfBirth" class="input-field" formControlName="placeOfBirth" placeholder="Place of birth" />
+        </div>
+
+        <div>
+          <label class="field-label" for="idType">ID Type</label>
+          <input id="idType" class="input-field" formControlName="idType" placeholder="Fayda / National ID" />
+        </div>
+
+        <div>
+          <label class="field-label" for="employer">Employer</label>
+          <input id="employer" class="input-field" formControlName="employer" placeholder="Employer or organization" />
+        </div>
+
+        <div>
+          <label class="field-label" for="monthlyIncome">Average Monthly Income (ETB)</label>
+          <input
+            id="monthlyIncome"
+            type="number"
+            class="input-field"
+            formControlName="monthlyIncome"
+            [placeholder]="customer.minor ? 'Optional for minor customer' : 'Enter average monthly income'"
+          />
+          <p *ngIf="customer.minor" class="mt-2 text-sm text-slate-500">
+            Monthly income is optional for minor customers and can be added only when available.
+          </p>
+        </div>
+
+        <div>
+          <label class="field-label" for="residentIdNumber">Resident ID / Yellow Card Number</label>
+          <input id="residentIdNumber" class="input-field" formControlName="residentIdNumber" placeholder="Optional resident or yellow card number" />
+        </div>
+
+        <div>
+          <label class="field-label" for="tinNumber">TIN Number</label>
+          <input id="tinNumber" class="input-field" formControlName="tinNumber" placeholder="Optional unless required by account type" />
+        </div>
+
+        <div>
+          <label class="field-label" for="title">Customer Title</label>
+          <select id="title" class="select-field" formControlName="title">
+            <option value="Ato">Ato</option>
+            <option value="W/t">W/t</option>
+            <option value="Dr">Dr</option>
+            <option value="Hajji">Hajji</option>
+            <option value="MINOR">MINOR</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="field-label" for="maritalStatus">Marital Status</label>
+          <select id="maritalStatus" class="select-field" formControlName="maritalStatus">
+            <option value="S">Single</option>
+            <option value="M">Married</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="field-label" for="staffStatus">Staff Status</label>
+          <select id="staffStatus" class="select-field" formControlName="staffStatus">
+            <option value="NON_STAFF">Non-staff</option>
+            <option value="STAFF">Staff</option>
+          </select>
+        </div>
+
+        <div class="xl:col-span-2">
+          <label class="field-label" for="guardianName">Guardian Name</label>
+          <input id="guardianName" class="input-field" formControlName="guardianName" [placeholder]="customer.minor ? 'Enter guardian name' : 'Optional guardian name'" />
+          <p *ngIf="customer.minor" class="mt-2 text-sm text-slate-500">
+            Guardian name is required for minor customer onboarding.
+          </p>
+        </div>
+      </div>
+
+      <p *ngIf="form.invalid && (form.dirty || form.touched)" class="mt-6 text-sm text-rose-600">
+        Complete all mandatory fields before continuing.
+      </p>
+
+      <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">
+        <button type="button" class="btn-secondary" (click)="goBack()">Back to verification</button>
+        <button type="button" class="btn-primary" (click)="continue()">Review submission</button>
+      </div>
+    </form>
+  </div>
+</div>

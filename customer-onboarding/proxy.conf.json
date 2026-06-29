@@ -1,0 +1,44 @@
+{
+  "/api/ida": {
+    "target": "http://10.10.13.68:8080",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api/ida": "/api/Ida"
+    }
+  },
+  "/api/core": {
+    "target": "http://localhost:5098",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/fcubs-account": {
+    "target": "http://10.1.200.153:7003",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "timeout": 300000,
+    "proxyTimeout": 300000,
+    "xfwd": true,
+    "pathRewrite": {
+      "^/api/fcubs-account/?$": "/FCUBSAccService/FCUBSAccService"
+    }
+  },
+  "/api/fcubs": {
+    "target": "http://10.1.200.153:7003",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "timeout": 300000,
+    "proxyTimeout": 300000,
+    "xfwd": true,
+    "pathRewrite": {
+      "^/api/fcubs/?$": "/FCUBSCustomerService/FCUBSCustomerService"
+    }
+  },
+  "/api/customer-image-signature": {
+    "target": "http://10.10.13.97",
+    "secure": false,
+    "changeOrigin": true
+  }
+}

@@ -1,0 +1,62 @@
+export const environment = {
+  production: true,
+  siteUrl: 'https://www.alexmorganstudio.com',
+  features: {
+    telebirrEnabled: false
+  },
+  api: {
+    coreBaseUrl: '/api/core',
+    idaBaseUrl: '/api/ida',
+    fcubsUrl: '/api/fcubs',
+    fcubsAccountUrl: '/api/fcubs-account',
+    customerImageSignatureUrl: '/api/customer-image-signature/upload',
+    contactUrl: '/api/contact'
+  },
+  bankDefaults: {
+    branchCode: '109',
+    branchLocation: 'AA',
+    nationality: 'ETH',
+    country: 'ETH',
+    accountClass: 'SPIA',
+    accountType: 'S',
+    media: 'MAIL',
+    customerCategory: 'IND',
+    source: 'PAP',
+    userId: 'ESBUSER',
+    ubsComp: 'FCUBS',
+    service: 'FCUBSCustomerService',
+    operation: 'CreateCustomer',
+    accountService: 'FCUBSAccService',
+    accountOperation: 'CreateCustAcc',
+    makerId: 'PAPAERLESS',
+    checkerId: 'PAPAERLESS',
+    cashGlCode: 'CASH_GL',
+    defaultAccountCode: '11',
+    accountClassCodes: {
+      SPIA: '11',
+      CPRI: '21',
+      SSPI: '51',
+      TDPI: '64',
+      SAFC: '71',
+      SAFY: '72',
+      SAGP: '73',
+      SATD: '44',
+      SAER: '95',
+      SAWR: '96',
+      WCPI: '75',
+      TDUI: '68',
+      SVTA: '45',
+      SAEA: '94',
+      WSPI: '74',
+      HJSL: '05',
+      SFAS: '76',
+      TDGL: '64',
+      TEDG: '64',
+      MMUS: '78',
+      LMUS: '79',
+      WMUS: '77',
+      EXSA: '29',
+      METS: '38'
+    } as Record<string, string>
+  }
+};

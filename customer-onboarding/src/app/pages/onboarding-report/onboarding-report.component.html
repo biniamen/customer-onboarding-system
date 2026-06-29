@@ -1,0 +1,332 @@
+<section class="space-y-6">
+  <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+    <div class="max-w-3xl">
+      <p class="section-eyebrow">Onboarding reporting</p>
+      <h2 class="section-title">Monitor onboarding outcomes</h2>
+      <p class="section-copy">Search onboarding cases, follow branch performance, export a clean report, and let KYC review completed records from one place.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button class="btn-secondary btn-compact" type="button" (click)="exportExcel()" [disabled]="exportBusy">Download Excel</button>
+      <button class="btn-secondary btn-compact" type="button" (click)="exportPdf()" [disabled]="exportBusy">Download PDF</button>
+      <button class="btn-secondary btn-compact" type="button" (click)="refreshAll()" [disabled]="loading || loadingDashboard">Refresh</button>
+    </div>
+  </div>
+
+  <div *ngIf="pageError" class="alert-danger">{{ pageError }}</div>
+
+  <div class="panel-card space-y-4">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <p class="section-eyebrow mb-1">Report filters</p>
+        <p class="text-sm text-slate-500">The date range applies to the dashboard summary and the onboarding register together.</p>
+      </div>
+      <span class="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">{{ summaryRangeText }}</span>
+    </div>
+
+    <div class="grid gap-3 xl:grid-cols-7">
+      <input class="form-input xl:col-span-2" [(ngModel)]="searchTerm" (keyup.enter)="applyFilters()" placeholder="Search by case, customer, CIF, branch, account, or operator" />
+
+      <select class="form-input" [(ngModel)]="statusFilter" (change)="applyFilters()">
+        <option *ngFor="let status of statusOptions" [ngValue]="status">{{ status ? getStatusLabel(status) : 'All statuses' }}</option>
+      </select>
+
+      <input class="form-input" type="date" [(ngModel)]="fromDate" />
+      <input class="form-input" type="date" [(ngModel)]="toDate" />
+
+      <select class="form-input" [ngModel]="pageSize" (ngModelChange)="updatePageSize($event)">
+        <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size === -1 ? 'All rows' : (size + ' rows') }}</option>
+      </select>
+
+      <div class="flex gap-2">
+        <button class="btn-secondary btn-compact flex-1" type="button" (click)="applyFilters()">Apply</button>
+        <button class="btn-secondary btn-compact flex-1" type="button" (click)="clearFilters()">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loadingDashboard && !dashboardStats" class="panel-card text-sm text-slate-500">Loading dashboard summary...</div>
+
+  <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5" *ngIf="dashboardStats as stats">
+    <div class="metric-card">
+      <p class="text-xs uppercase tracking-[0.18em] text-slate-500">{{ summaryRangeLabel }} pending</p>
+      <p class="mt-2 text-2xl font-bold text-amber-700">{{ stats.today.pending }}</p>
+      <p class="mt-1 text-xs text-slate-500">Grand total {{ stats.grandTotal.pending }}</p>
+    </div>
+    <div class="metric-card">
+      <p class="text-xs uppercase tracking-[0.18em] text-slate-500">{{ summaryRangeLabel }} account created</p>
+      <p class="mt-2 text-2xl font-bold text-emerald-700">{{ stats.today.accountCreated }}</p>
+      <p class="mt-1 text-xs text-slate-500">Grand total {{ stats.grandTotal.accountCreated }}</p>
+    </div>
+    <div class="metric-card">
+      <p class="text-xs uppercase tracking-[0.18em] text-slate-500">{{ summaryRangeLabel }} KYC reviewed</p>
+      <p class="mt-2 text-2xl font-bold text-brand-700">{{ stats.today.kycReviewed }}</p>
+      <p class="mt-1 text-xs text-slate-500">Grand total {{ stats.grandTotal.kycReviewed }}</p>
+    </div>
+    <div class="metric-card">
+      <p class="text-xs uppercase tracking-[0.18em] text-slate-500">{{ summaryRangeLabel }} failed</p>
+      <p class="mt-2 text-2xl font-bold text-rose-700">{{ stats.today.failed }}</p>
+      <p class="mt-1 text-xs text-slate-500">Grand total {{ stats.grandTotal.failed }}</p>
+    </div>
+    <div class="metric-card">
+      <p class="text-xs uppercase tracking-[0.18em] text-slate-500">{{ summaryRangeLabel }} amount</p>
+      <p class="mt-2 text-2xl font-bold text-slate-900">{{ stats.today.totalOpeningAmount | number:'1.2-2' }}</p>
+      <p class="mt-1 text-xs text-slate-500">Grand total {{ stats.grandTotal.totalOpeningAmount | number:'1.2-2' }} ETB</p>
+    </div>
+  </div>
+
+  <div class="panel-card space-y-4" *ngIf="dashboardStats as stats">
+    <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      <div>
+        <p class="section-eyebrow mb-1">All branch onboarding summary</p>
+        <p class="text-sm text-slate-500">Browse branch onboarding totals in a compact paged table instead of rendering the full list at once.</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <input class="form-input branch-search" [(ngModel)]="branchSearchTerm" (ngModelChange)="onBranchSearchChange()" placeholder="Search branch code or branch name" />
+        <select class="form-input branch-size" [ngModel]="branchPageSize" (ngModelChange)="updateBranchPageSize($event)">
+          <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size === -1 ? 'All branches' : (size + ' branches') }}</option>
+        </select>
+        <span class="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">{{ filteredBranchStats.length }} branches</span>
+      </div>
+    </div>
+
+    <div class="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
+      <div class="overflow-x-auto report-table-wrap">
+        <table class="branch-summary-table">
+          <thead class="bg-slate-50 text-xs uppercase tracking-[0.12em] text-slate-500">
+            <tr>
+              <th class="px-4 py-3">Branch</th>
+              <th class="px-4 py-3">{{ summaryRangeLabel }} pending</th>
+              <th class="px-4 py-3">{{ summaryRangeLabel }} created</th>
+              <th class="px-4 py-3">{{ summaryRangeLabel }} KYC reviewed</th>
+              <th class="px-4 py-3">{{ summaryRangeLabel }} failed</th>
+              <th class="px-4 py-3">{{ summaryRangeLabel }} rejected</th>
+              <th class="px-4 py-3">{{ summaryRangeLabel }} amount</th>
+              <th class="px-4 py-3">Grand pending</th>
+              <th class="px-4 py-3">Grand created</th>
+              <th class="px-4 py-3">Grand KYC reviewed</th>
+              <th class="px-4 py-3">Grand failed</th>
+              <th class="px-4 py-3">Grand rejected</th>
+              <th class="px-4 py-3">Grand amount</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 bg-white text-sm text-slate-700">
+            <tr *ngFor="let branch of pagedBranchStats">
+              <td class="px-4 py-3 font-semibold text-slate-900">{{ branch.branchCode }} - {{ branch.branchName }}</td>
+              <td class="px-4 py-3">{{ branch.today.pending }}</td>
+              <td class="px-4 py-3">{{ branch.today.accountCreated }}</td>
+              <td class="px-4 py-3">{{ branch.today.kycReviewed }}</td>
+              <td class="px-4 py-3">{{ branch.today.failed }}</td>
+              <td class="px-4 py-3">{{ branch.today.rejected }}</td>
+              <td class="px-4 py-3 font-semibold text-slate-900">{{ branch.today.totalOpeningAmount | number:'1.2-2' }}</td>
+              <td class="px-4 py-3">{{ branch.grandTotal.pending }}</td>
+              <td class="px-4 py-3">{{ branch.grandTotal.accountCreated }}</td>
+              <td class="px-4 py-3">{{ branch.grandTotal.kycReviewed }}</td>
+              <td class="px-4 py-3">{{ branch.grandTotal.failed }}</td>
+              <td class="px-4 py-3">{{ branch.grandTotal.rejected }}</td>
+              <td class="px-4 py-3 font-semibold text-slate-900">{{ branch.grandTotal.totalOpeningAmount | number:'1.2-2' }}</td>
+            </tr>
+            <tr *ngIf="!pagedBranchStats.length">
+              <td colspan="13" class="px-4 py-8 text-center text-sm text-slate-500">No branch summary records available for the selected range.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <p>Page {{ branchCurrentPage }} of {{ branchTotalPages }}</p>
+        <div class="flex gap-2">
+          <button class="btn-secondary btn-compact" type="button" (click)="changeBranchPage(branchCurrentPage - 1)" [disabled]="branchCurrentPage <= 1">Previous</button>
+          <button class="btn-secondary btn-compact" type="button" (click)="changeBranchPage(branchCurrentPage + 1)" [disabled]="branchCurrentPage >= branchTotalPages">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-card space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
+      <div>
+        <p class="section-eyebrow mb-1">Onboarding register</p>
+        <p class="text-sm text-slate-500">Detailed onboarding records based on the current filters.</p>
+      </div>
+      <span class="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">{{ totalRecords }} records</span>
+    </div>
+
+    <div class="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
+      <div class="overflow-x-auto report-table-wrap">
+        <table class="report-table">
+          <thead class="bg-slate-50 text-xs uppercase tracking-[0.14em] text-slate-500">
+            <tr>
+              <th class="px-4 py-3">Case Ref</th>
+              <th class="px-4 py-3">Customer</th>
+              <th class="px-4 py-3">CIF</th>
+              <th class="px-4 py-3">Branch</th>
+              <th class="px-4 py-3">Class</th>
+              <th class="px-4 py-3">Amount</th>
+              <th class="px-4 py-3">Funding</th>
+              <th class="px-4 py-3">Account</th>
+              <th class="px-4 py-3">Status</th>
+              <th class="px-4 py-3">Maker</th>
+              <th class="px-4 py-3">Checker</th>
+              <th class="px-4 py-3">KYC</th>
+              <th class="px-4 py-3">Submitted</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm text-slate-700">
+            <tr *ngFor="let record of records">
+              <td class="px-4 py-3 font-semibold text-slate-900">{{ record.caseReference }}</td>
+              <td class="px-4 py-3">{{ record.customerName }}</td>
+              <td class="px-4 py-3">{{ record.customerNumber }}</td>
+              <td class="px-4 py-3">{{ record.branchCode }}</td>
+              <td class="px-4 py-3">{{ record.accountClass }}</td>
+              <td class="px-4 py-3">{{ record.openingAmount | number:'1.2-2' }}</td>
+              <td class="px-4 py-3">{{ record.fundingSourceType }}</td>
+              <td class="px-4 py-3">{{ record.accountNumber || '-' }}</td>
+              <td class="px-4 py-3"><span class="rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="statusClass(record.status)">{{ getStatusLabel(record.status) }}</span></td>
+              <td class="px-4 py-3">{{ record.makerUsername || '-' }}</td>
+              <td class="px-4 py-3">{{ record.checkerUsername || '-' }}</td>
+              <td class="px-4 py-3">{{ record.kycReviewerUsername || '-' }}</td>
+              <td class="px-4 py-3">{{ record.submittedAtUtc | date:'medium' }}</td>
+              <td class="px-4 py-3">
+                <button class="btn-secondary btn-compact" type="button" (click)="openDetails(record)">View</button>
+              </td>
+            </tr>
+            <tr *ngIf="!loading && !records.length">
+              <td colspan="14" class="px-4 py-10 text-center text-sm text-slate-500">No onboarding records found for the selected filters.</td>
+            </tr>
+            <tr *ngIf="loading">
+              <td colspan="14" class="px-4 py-10 text-center text-sm text-slate-500">Loading report data...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <p>Page {{ currentPage }} of {{ totalPages }}</p>
+        <div class="flex gap-2">
+          <button class="btn-secondary btn-compact" type="button" (click)="changePage(currentPage - 1)" [disabled]="currentPage <= 1">Previous</button>
+          <button class="btn-secondary btn-compact" type="button" (click)="changePage(currentPage + 1)" [disabled]="currentPage >= totalPages">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4" *ngIf="selectedRecord as record">
+    <div class="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-[30px] border border-white/80 bg-white p-6 shadow-2xl">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="section-eyebrow">Onboarding details</p>
+          <h3 class="mt-2 text-2xl font-bold text-slate-900">{{ record.customerName }}</h3>
+          <p class="mt-2 text-sm text-slate-500">Case {{ record.caseReference }} | CIF {{ record.customerNumber }} | Status {{ getStatusLabel(record.status) }}</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn-secondary btn-compact" type="button" (click)="downloadVerifiedProfile()" [disabled]="downloadingProfile">{{ downloadingProfile ? 'Preparing...' : 'Download Profile' }}</button>
+          <button class="btn-secondary btn-compact" type="button" (click)="closeDetails()">Close</button>
+        </div>
+      </div>
+
+      <div class="mt-6 grid gap-6 xl:grid-cols-[1.1fr,0.9fr]">
+        <div class="space-y-4">
+          <div class="panel-card">
+            <p class="section-eyebrow mb-3">Request summary</p>
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="metric-card"><p class="text-sm text-slate-500">Customer</p><p class="mt-2 font-semibold text-slate-900">{{ record.customerName }}</p></div>
+              <div class="metric-card"><p class="text-sm text-slate-500">Customer number</p><p class="mt-2 font-semibold text-slate-900">{{ record.customerNumber }}</p></div>
+              <div class="metric-card"><p class="text-sm text-slate-500">Branch</p><p class="mt-2 font-semibold text-slate-900">{{ record.branchCode }}</p></div>
+              <div class="metric-card"><p class="text-sm text-slate-500">Account class</p><p class="mt-2 font-semibold text-slate-900">{{ record.accountClass }}</p></div>
+              <div class="metric-card"><p class="text-sm text-slate-500">Opening amount</p><p class="mt-2 font-semibold text-slate-900">{{ record.openingAmount | number:'1.2-2' }} ETB</p></div>
+              <div class="metric-card"><p class="text-sm text-slate-500">Funding source</p><p class="mt-2 font-semibold text-slate-900">{{ record.fundingSourceType }}<span *ngIf="record.fundingSourceValue"> - {{ record.fundingSourceValue }}</span></p></div>
+              <div class="metric-card"><p class="text-sm text-slate-500">Account number</p><p class="mt-2 font-semibold text-slate-900">{{ record.accountNumber || '-' }}</p></div>
+              <div class="metric-card"><p class="text-sm text-slate-500">Status</p><p class="mt-2 font-semibold text-slate-900">{{ getStatusLabel(record.status) }}</p></div>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <p class="section-eyebrow mb-3">KYC details</p>
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="metric-card"><p class="text-sm text-slate-500">Mobile</p><p class="mt-2 font-semibold text-slate-900">{{ record.mobileNumber || '-' }}</p></div>
+              <div class="metric-card"><p class="text-sm text-slate-500">Email</p><p class="mt-2 font-semibold text-slate-900">{{ record.email || '-' }}</p></div>
+              <div class="metric-card"><p class="text-sm text-slate-500">Place of birth</p><p class="mt-2 font-semibold text-slate-900">{{ record.placeOfBirth || '-' }}</p></div>
+              <div class="metric-card"><p class="text-sm text-slate-500">ID type</p><p class="mt-2 font-semibold text-slate-900">{{ record.idType || '-' }}</p></div>
+              <div class="metric-card"><p class="text-sm text-slate-500">Resident / Yellow card</p><p class="mt-2 font-semibold text-slate-900">{{ record.residentIdNumber || '-' }}</p></div>
+              <div class="metric-card"><p class="text-sm text-slate-500">TIN number</p><p class="mt-2 font-semibold text-slate-900">{{ record.tinNumber || '-' }}</p></div>
+              <div class="metric-card"><p class="text-sm text-slate-500">Maker</p><p class="mt-2 font-semibold text-slate-900">{{ record.makerFullName }} ({{ record.makerUsername }})</p></div>
+              <div class="metric-card"><p class="text-sm text-slate-500">Checker</p><p class="mt-2 font-semibold text-slate-900">{{ record.checkerFullName || '-' }}<span *ngIf="record.checkerUsername"> ({{ record.checkerUsername }})</span></p></div>
+              <div class="metric-card"><p class="text-sm text-slate-500">KYC reviewer</p><p class="mt-2 font-semibold text-slate-900">{{ record.kycReviewerFullName || '-' }}<span *ngIf="record.kycReviewerUsername"> ({{ record.kycReviewerUsername }})</span></p></div>
+              <div class="metric-card"><p class="text-sm text-slate-500">KYC reviewed at</p><p class="mt-2 font-semibold text-slate-900">{{ record.kycReviewedAtUtc ? (record.kycReviewedAtUtc | date:'medium') : '-' }}</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div class="panel-card">
+            <p class="section-eyebrow mb-3">Verified profile</p>
+            <div class="grid gap-4 sm:grid-cols-3">
+              <button type="button" class="asset-card" (click)="openAssetViewer('NID photo', nidPhotoPreview, 'image/png')" [disabled]="!nidPhotoPreview">
+                <img *ngIf="nidPhotoPreview" [src]="nidPhotoPreview" alt="NID photo" class="asset-card__image" />
+                <span *ngIf="!nidPhotoPreview" class="asset-card__empty">No NID photo</span>
+                <span class="asset-card__label">NID photo</span>
+              </button>
+              <button type="button" class="asset-card" (click)="openAssetViewer('Customer photo', uploadedPhotoPreview, 'image/jpeg')" [disabled]="!uploadedPhotoPreview">
+                <img *ngIf="uploadedPhotoPreview" [src]="uploadedPhotoPreview" alt="Customer photo" class="asset-card__image" />
+                <span *ngIf="!uploadedPhotoPreview" class="asset-card__empty">No uploaded photo</span>
+                <span class="asset-card__label">Customer photo</span>
+              </button>
+              <button type="button" class="asset-card" (click)="openAssetViewer('Signature', signaturePreview, 'image/jpeg')" [disabled]="!signaturePreview">
+                <img *ngIf="signaturePreview" [src]="signaturePreview" alt="Signature" class="asset-card__image" />
+                <span *ngIf="!signaturePreview" class="asset-card__empty">No signature</span>
+                <span class="asset-card__label">Signature</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <p class="section-eyebrow mb-3">Uploaded documents</p>
+            <div class="grid gap-4 md:grid-cols-2" *ngIf="selectedDocuments.length; else noDocuments">
+              <div *ngFor="let document of selectedDocuments" class="metric-card text-left transition hover:border-brand-200 hover:shadow-md">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-semibold text-slate-900">{{ document.displayName }}</p>
+                    <p class="mt-1 text-xs text-slate-500">{{ document.fileName }}</p>
+                  </div>
+                  <span class="rounded-full bg-brand-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-700">
+                    {{ isPdfMimeType(document.mimeType) ? 'PDF' : (isImageMimeType(document.mimeType) ? 'Image' : 'File') }}
+                  </span>
+                </div>
+                <div class="mt-4 flex gap-2 justify-end">
+                  <button type="button" class="btn-secondary btn-compact" (click)="openDocumentViewer(document)">Preview</button>
+                  <button type="button" class="btn-secondary btn-compact" (click)="downloadDocument(document)">Download</button>
+                </div>
+              </div>
+            </div>
+            <ng-template #noDocuments>
+              <div class="rounded-[20px] border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">No supporting documents were saved with this request.</div>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isViewerOpen()" class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 p-4" (click)="closeViewer()">
+    <div class="max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-[28px] bg-white shadow-2xl" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <div>
+          <p class="text-sm font-semibold uppercase tracking-[0.2em] text-brand-700">Preview</p>
+          <h3 class="mt-1 text-xl font-bold text-slate-900">{{ viewerTitle }}</h3>
+        </div>
+        <button type="button" class="btn-secondary btn-compact" (click)="closeViewer()">Close</button>
+      </div>
+      <div class="max-h-[78vh] overflow-auto bg-slate-50 p-5">
+        <img *ngIf="isImageMimeType(viewerMimeType)" [src]="viewerUrl" [alt]="viewerTitle" class="mx-auto max-h-[72vh] w-auto max-w-full rounded-[22px] bg-white p-2 shadow-sm" />
+        <iframe *ngIf="isPdfMimeType(viewerMimeType)" [src]="viewerResourceUrl" title="Document preview" class="h-[72vh] w-full rounded-[22px] border border-slate-200 bg-white"></iframe>
+        <div *ngIf="!isImageMimeType(viewerMimeType) && !isPdfMimeType(viewerMimeType)" class="flex min-h-[22rem] items-center justify-center rounded-[22px] border border-dashed border-slate-300 bg-white px-6 text-center">
+          <div>
+            <p class="text-lg font-semibold text-slate-900">Preview not available for this file type.</p>
+            <p class="mt-2 text-sm text-slate-500">Download the original file if you need to inspect it outside the application.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

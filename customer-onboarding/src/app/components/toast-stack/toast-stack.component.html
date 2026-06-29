@@ -1,0 +1,12 @@
+<div class="toast-stack">
+  <div
+    *ngFor="let toast of toasts$ | async"
+    class="toast-card"
+    [ngClass]="toast.type">
+    <div class="flex-1">
+      <p class="text-sm font-semibold">{{ toast.title }}</p>
+      <p class="mt-1 text-sm opacity-90">{{ toast.message }}</p>
+    </div>
+    <button type="button" class="ml-4 text-xs font-semibold uppercase tracking-[0.18em] opacity-70" (click)="dismiss(toast.id)">Close</button>
+  </div>
+</div>

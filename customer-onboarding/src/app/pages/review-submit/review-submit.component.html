@@ -1,0 +1,161 @@
+<div class="space-y-7" *ngIf="profile as customer">
+  <div>
+    <p class="section-eyebrow">Step 3</p>
+    <h2 class="section-title">Review and create customer</h2>
+    <p class="section-copy max-w-3xl">
+      Confirm the details below, then create the customer profile and continue to account setup.
+    </p>
+  </div>
+
+  <div *ngIf="submissionError" class="status-card error">{{ submissionError }}</div>
+  <div *ngIf="result?.message" class="status-card" [ngClass]="result?.success ? 'success' : 'error'">{{ result?.message }}</div>
+
+  <div class="grid gap-6 2xl:grid-cols-[minmax(0,0.95fr),minmax(0,1.15fr)]">
+    <div class="space-y-6">
+      <div class="panel-card">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-600">Verified customer</p>
+        <h3 class="mt-2 text-[1.55rem] font-bold text-slate-900">{{ customer.fullName }}</h3>
+        <div class="mt-6 grid gap-5 lg:grid-cols-[210px,minmax(0,1fr)]">
+          <div class="rounded-[24px] border border-brand-100 bg-gradient-to-br from-brand-50 via-white to-accent-50/60 p-4">
+            <p class="text-xs font-semibold uppercase tracking-[0.22em] text-brand-700">NID Photo</p>
+            <div class="mt-4 flex h-[220px] items-center justify-center overflow-hidden rounded-[20px] bg-slate-100">
+              <img *ngIf="nidPhotoPreview" [src]="nidPhotoPreview" alt="Verified photo" class="h-full w-full object-cover" />
+              <p *ngIf="!nidPhotoPreview" class="px-4 text-center text-sm text-slate-500">Photo was not returned from the NID response.</p>
+            </div>
+            <button type="button" class="btn-secondary mt-4 w-full" [disabled]="downloading" (click)="downloadVerifiedProfile()">
+              {{ downloading ? 'Preparing profile...' : 'Download Verified Profile' }}
+            </button>
+          </div>
+          <dl class="grid gap-4 sm:grid-cols-2">
+            <div class="metric-card">
+              <dt class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">National ID / PSUT</dt>
+              <dd class="mt-2 text-sm font-semibold text-slate-900">{{ customer.psut || customer.nationalId }}</dd>
+            </div>
+            <div class="metric-card">
+              <dt class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Date of birth</dt>
+              <dd class="mt-2 text-sm font-semibold text-slate-900">{{ customer.dateOfBirth }}</dd>
+            </div>
+            <div class="metric-card">
+              <dt class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Gender</dt>
+              <dd class="mt-2 text-sm font-semibold text-slate-900">{{ customer.gender }}</dd>
+            </div>
+            <div class="metric-card">
+              <dt class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Region</dt>
+              <dd class="mt-2 text-sm font-semibold text-slate-900">{{ customer.regionName }} ({{ customer.regionCode }})</dd>
+            </div>
+            <div class="metric-card">
+              <dt class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Residence status</dt>
+              <dd class="mt-2 text-sm font-semibold text-slate-900">{{ customer.residenceStatus || 'Ethiopian' }}</dd>
+            </div>
+            <div class="metric-card">
+              <dt class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Email</dt>
+              <dd class="mt-2 text-sm font-semibold text-slate-900">{{ details?.email || customer.email || 'Not provided' }}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="mt-6 soft-panel">
+          <p class="text-sm font-semibold text-slate-900">Registered address</p>
+          <p class="mt-2 text-sm leading-7 text-slate-600">
+            {{ customer.addressLine1 }}, {{ customer.addressLine2 }}, {{ customer.addressLine3 }}, {{ customer.addressLine4 }}
+          </p>
+        </div>
+      </div>
+
+      <div class="panel-card bg-gradient-to-r from-accent-50 via-white to-brand-50/70" *ngIf="result as submission">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-700">Creation result</p>
+        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+          <div class="metric-card">
+            <p class="text-sm text-slate-500">Customer number</p>
+            <p class="mt-2 text-xl font-bold text-slate-900">{{ submission.customerNumber || 'Not returned' }}</p>
+          </div>
+          <div class="metric-card">
+            <p class="text-sm text-slate-500">Account number</p>
+            <p class="mt-2 text-xl font-bold text-slate-900">{{ submission.accountNumber || 'Not returned' }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-card" *ngIf="details as formDetails">
+      <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-600">Submission fields</p>
+          <h3 class="mt-1.5 text-[1.55rem] font-bold text-slate-900">Final preview</h3>
+        </div>
+        <p class="text-[0.9rem] text-slate-500">Review the entered values before submission.</p>
+      </div>
+
+      <div class="mt-5 grid gap-4 sm:grid-cols-2">
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Mother name</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ formDetails.motherName }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Occupation</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ formDetails.occupation }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Monthly income</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ formDetails.monthlyIncome ? ((formDetails.monthlyIncome | number:'1.0-0') + ' ETB') : 'Not provided' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Mobile number</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ formDetails.mobileNumber }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Email address</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ formDetails.email }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Place of birth</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ formDetails.placeOfBirth }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">ID type</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ formDetails.idType }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Employer</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ formDetails.employer }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Work position</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ formDetails.workPosition }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Customer title</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ formDetails.title }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Staff status</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ formDetails.staffStatus }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Marital status</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ formDetails.maritalStatus === 'M' ? 'Married' : 'Single' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Resident / Yellow card</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ formDetails.residentIdNumber || 'Not provided' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">TIN number</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ formDetails.tinNumber || 'Not provided' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Guardian name</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ formDetails.guardianName || 'Not provided' }}</p>
+        </div>
+      </div>
+
+      <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <button type="button" class="btn-secondary" (click)="back()">Back to edit</button>
+        <button type="button" class="btn-primary" [disabled]="submitting" (click)="submit()">
+          {{ submitting ? 'Submitting...' : 'Create Customer' }}
+        </button>
+        <button type="button" class="btn-secondary" *ngIf="result?.success" (click)="startNew()">Start new onboarding</button>
+      </div>
+    </div>
+  </div>
+</div>

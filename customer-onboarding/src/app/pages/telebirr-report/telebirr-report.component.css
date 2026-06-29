@@ -1,0 +1,21 @@
+.report-table-wrap {
+  overflow-x: auto;
+}
+
+.report-table {
+  min-width: 1320px;
+  width: 100%;
+}
+
+.branch-summary-table {
+  min-width: 1460px;
+  width: 100%;
+}
+
+.branch-search {
+  min-width: 260px;
+}
+
+.branch-size {
+  min-width: 150px;
+}

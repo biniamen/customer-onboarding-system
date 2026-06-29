@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 160" role="img" aria-labelledby="title desc">
+  <title id="title">Bank logo placeholder</title>
+  <desc id="desc">Replace this file with the official bank logo while keeping the same file name.</desc>
+  <defs>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f6c34a"/>
+      <stop offset="100%" stop-color="#ebab23"/>
+    </linearGradient>
+  </defs>
+  <rect width="420" height="160" rx="30" fill="white" fill-opacity="0.04"/>
+  <path d="M54 24h54c28 0 50 22 50 50 0 17-9 33-24 42 15 9 24 25 24 42 0 2 0 4-.2 6H116c.6-2 .9-4 .9-6 0-11-9-20-20-20H84v-34h10c13 0 24-11 24-24s-11-24-24-24H84v116H54V24z" fill="url(#gold)"/>
+  <text x="184" y="68" font-family="Inter, Segoe UI, sans-serif" font-size="28" font-weight="800" fill="#07522a">GLOBAL BANK</text>
+  <text x="184" y="102" font-family="Inter, Segoe UI, sans-serif" font-size="16" font-weight="600" fill="#0f5132">Replace with official logo</text>
+</svg>

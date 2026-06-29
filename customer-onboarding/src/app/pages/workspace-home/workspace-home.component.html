@@ -1,0 +1,134 @@
+<section class="space-y-6">
+  <div>
+    <p class="section-eyebrow">Branch workspace</p>
+    <h1 class="section-title">Choose the activity you want to continue</h1>
+    <p class="section-copy" *ngIf="!isReportViewer && !isKycUnit">
+      {{ telebirrEnabled ? 'Open customer onboarding or prepare a Telebirr agent transfer from the same operator workspace.' : 'Open customer onboarding from this operator workspace.' }}
+    </p>
+    <p class="section-copy" *ngIf="isReportViewer">Access all-branch reports with search, filters, and detailed operational tracking.</p>
+    <p class="section-copy" *ngIf="isKycUnit">Review finished onboarding records, confirm KYC completion, and monitor branch onboarding output.</p>
+    <p class="section-copy" *ngIf="isAdmin">Manage users, role access, branch assignment, and password reset operations.</p>
+  </div>
+
+  <div class="grid gap-5 xl:grid-cols-2">
+    <a
+      *ngIf="isMaker"
+      routerLink="/fan-verification"
+      class="group rounded-[26px] border border-brand-100 bg-white/90 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-glow"
+    >
+      <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-100 text-sm font-bold text-brand-700">ON</div>
+      <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-600">Customer onboarding</p>
+      <h2 class="mt-2 text-2xl font-bold text-slate-900">Start a new onboarding request</h2>
+      <p class="mt-3 text-sm leading-7 text-slate-600">Verify FAN, complete the profile, submit the request, and continue to account opening.</p>
+      <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
+        Open onboarding
+        <span class="transition group-hover:translate-x-1">&rarr;</span>
+      </div>
+    </a>
+
+    <a
+      *ngIf="telebirrEnabled && isMaker"
+      routerLink="/telebirr-transfer"
+      class="group rounded-[26px] border border-brand-100 bg-white/90 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-glow"
+    >
+      <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-sm font-bold text-emerald-700">TB</div>
+      <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-600">Telebirr transfer</p>
+      <h2 class="mt-2 text-2xl font-bold text-slate-900">Prepare an agent transfer request</h2>
+      <p class="mt-3 text-sm leading-7 text-slate-600">Verify the customer account, confirm the agent code, enter the amount, and send the request for review.</p>
+      <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
+        Open transfer
+        <span class="transition group-hover:translate-x-1">&rarr;</span>
+      </div>
+    </a>
+
+    <a
+      *ngIf="isMaker"
+      routerLink="/approved-accounts"
+      class="group rounded-[26px] border border-brand-100 bg-white/90 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-glow"
+    >
+      <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-sm font-bold text-amber-700">MR</div>
+      <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-600">My onboarding requests</p>
+      <h2 class="mt-2 text-2xl font-bold text-slate-900">Track pending and completed requests</h2>
+      <p class="mt-3 text-sm leading-7 text-slate-600">Review submitted onboarding cases, open every attachment, and monitor whether a checker has approved the request.</p>
+      <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
+        Open my requests
+        <span class="transition group-hover:translate-x-1">&rarr;</span>
+      </div>
+    </a>
+
+    <a
+      *ngIf="isChecker"
+      routerLink="/checker-dashboard"
+      class="group rounded-[26px] border border-brand-100 bg-white/90 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-glow"
+    >
+      <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-100 text-sm font-bold text-brand-700">AQ</div>
+      <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-600">Onboarding approvals</p>
+      <h2 class="mt-2 text-2xl font-bold text-slate-900">Review customer onboarding requests</h2>
+      <p class="mt-3 text-sm leading-7 text-slate-600">Check prepared customer files from your branch and approve ready account opening requests.</p>
+      <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
+        Open approvals
+        <span class="transition group-hover:translate-x-1">&rarr;</span>
+      </div>
+    </a>
+
+    <a
+      *ngIf="telebirrEnabled && isChecker"
+      routerLink="/telebirr-approvals"
+      class="group rounded-[26px] border border-brand-100 bg-white/90 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-glow"
+    >
+      <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-sm font-bold text-emerald-700">TQ</div>
+      <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-600">Telebirr approvals</p>
+      <h2 class="mt-2 text-2xl font-bold text-slate-900">Review pending transfer requests</h2>
+      <p class="mt-3 text-sm leading-7 text-slate-600">Confirm branch requests, verify the amount and agent details, then approve or reject the transfer.</p>
+      <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
+        Open transfer queue
+        <span class="transition group-hover:translate-x-1">&rarr;</span>
+      </div>
+    </a>
+
+    <a
+      *ngIf="isAdmin || isReportViewer || isKycUnit"
+      routerLink="/onboarding-report"
+      class="group rounded-[26px] border border-brand-100 bg-white/90 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-glow"
+    >
+      <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-100 text-sm font-bold text-brand-700">OR</div>
+      <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-600">Onboarding report</p>
+      <h2 class="mt-2 text-2xl font-bold text-slate-900">Monitor onboarding records and KYC progress</h2>
+      <p class="mt-3 text-sm leading-7 text-slate-600">Search onboarding activity, open completed records, review supporting assets, and follow branch totals from one report view.</p>
+      <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
+        Open onboarding report
+        <span class="transition group-hover:translate-x-1">&rarr;</span>
+      </div>
+    </a>
+
+    <a
+      *ngIf="telebirrEnabled"
+      routerLink="/telebirr-report"
+      class="group rounded-[26px] border border-brand-100 bg-white/90 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-glow"
+    >
+      <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-sm font-bold text-amber-700">RP</div>
+      <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-600">Telebirr report</p>
+      <h2 class="mt-2 text-2xl font-bold text-slate-900">View transfer transaction report</h2>
+      <p class="mt-3 text-sm leading-7 text-slate-600">Search by reference, customer, account, status, maker, checker, and review transaction details quickly.</p>
+      <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
+        Open report
+        <span class="transition group-hover:translate-x-1">&rarr;</span>
+      </div>
+    </a>
+
+    <a
+      *ngIf="isAdmin"
+      routerLink="/user-management"
+      class="group rounded-[26px] border border-brand-100 bg-white/90 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-glow"
+    >
+      <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-100 text-sm font-bold text-brand-700">UM</div>
+      <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-600">Access control</p>
+      <h2 class="mt-2 text-2xl font-bold text-slate-900">Manage users and branch access</h2>
+      <p class="mt-3 text-sm leading-7 text-slate-600">Create users, assign roles/branches, update user details, and perform secure password resets.</p>
+      <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
+        Open user management
+        <span class="transition group-hover:translate-x-1">&rarr;</span>
+      </div>
+    </a>
+  </div>
+</section>

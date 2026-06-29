@@ -1,0 +1,304 @@
+<section class="space-y-6">
+  <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+    <div class="max-w-3xl">
+      <p class="section-eyebrow">Telebirr reporting</p>
+      <h2 class="section-title">Monitor transfer transactions</h2>
+      <p class="section-copy">Use a date range, search any field, and export a clean operational report for branch review, reconciliation, and follow-up.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button class="btn-secondary btn-compact" type="button" (click)="exportExcel()" [disabled]="exportBusy">Download Excel</button>
+      <button class="btn-secondary btn-compact" type="button" (click)="exportPdf()" [disabled]="exportBusy">Download PDF</button>
+      <button class="btn-secondary btn-compact" type="button" (click)="refreshAll()" [disabled]="loading || loadingDashboard">Refresh</button>
+    </div>
+  </div>
+
+  <div *ngIf="pageError" class="alert-danger">{{ pageError }}</div>
+
+  <div class="panel-card space-y-4">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <p class="section-eyebrow mb-1">Report filters</p>
+        <p class="text-sm text-slate-500">The date range applies to the dashboard summary and the transaction report together.</p>
+      </div>
+      <span class="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">{{ summaryRangeText }}</span>
+    </div>
+
+    <div class="grid gap-3 xl:grid-cols-7">
+      <input
+        class="form-input xl:col-span-2"
+        [(ngModel)]="searchTerm"
+        (keyup.enter)="applyFilters()"
+        placeholder="Search by customer, account, CBS ref, Telebirr ref, or operator"
+      />
+
+      <select class="form-input" [(ngModel)]="statusFilter" (change)="applyFilters()">
+        <option *ngFor="let status of statusOptions" [ngValue]="status">{{ status || 'All statuses' }}</option>
+      </select>
+
+      <input class="form-input" type="date" [(ngModel)]="fromDate" />
+      <input class="form-input" type="date" [(ngModel)]="toDate" />
+
+      <select class="form-input" [ngModel]="pageSize" (ngModelChange)="updatePageSize($event)">
+        <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size === -1 ? 'All rows' : (size + ' rows') }}</option>
+      </select>
+
+      <div class="flex gap-2">
+        <button class="btn-secondary btn-compact flex-1" type="button" (click)="applyFilters()">Apply</button>
+        <button class="btn-secondary btn-compact flex-1" type="button" (click)="clearFilters()">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loadingDashboard && !dashboardStats" class="panel-card text-sm text-slate-500">Loading dashboard summary...</div>
+
+  <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5" *ngIf="dashboardStats as stats">
+    <div class="metric-card">
+      <p class="text-xs uppercase tracking-[0.18em] text-slate-500">{{ summaryRangeLabel }} approved</p>
+      <p class="mt-2 text-2xl font-bold text-emerald-700">{{ stats.today.approved }}</p>
+      <p class="mt-1 text-xs text-slate-500">Grand total {{ stats.grandTotal.approved }}</p>
+    </div>
+    <div class="metric-card">
+      <p class="text-xs uppercase tracking-[0.18em] text-slate-500">{{ summaryRangeLabel }} failed</p>
+      <p class="mt-2 text-2xl font-bold text-amber-700">{{ stats.today.failed }}</p>
+      <p class="mt-1 text-xs text-slate-500">Grand total {{ stats.grandTotal.failed }}</p>
+    </div>
+    <div class="metric-card">
+      <p class="text-xs uppercase tracking-[0.18em] text-slate-500">{{ summaryRangeLabel }} rejected</p>
+      <p class="mt-2 text-2xl font-bold text-rose-700">{{ stats.today.rejected }}</p>
+      <p class="mt-1 text-xs text-slate-500">Grand total {{ stats.grandTotal.rejected }}</p>
+    </div>
+    <div class="metric-card">
+      <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Distinct agents</p>
+      <p class="mt-2 text-2xl font-bold text-brand-700">{{ stats.today.distinctAgents }}</p>
+      <p class="mt-1 text-xs text-slate-500">Grand total {{ stats.grandTotal.distinctAgents }}</p>
+    </div>
+    <div class="metric-card">
+      <p class="text-xs uppercase tracking-[0.18em] text-slate-500">{{ summaryRangeLabel }} amount</p>
+      <p class="mt-2 text-2xl font-bold text-slate-900">{{ stats.today.totalTransferredAmount | number:'1.2-2' }}</p>
+      <p class="mt-1 text-xs text-slate-500">Grand total {{ stats.grandTotal.totalTransferredAmount | number:'1.2-2' }} ETB</p>
+    </div>
+  </div>
+
+  <div class="panel-card space-y-4" *ngIf="dashboardStats as stats">
+    <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      <div>
+        <p class="section-eyebrow mb-1">
+          {{ stats.scope === 'ALL_BRANCHES' ? 'Branch performance summary' : ('Branch ' + (stats.branchCode || '-') + ' summary') }}
+        </p>
+        <p class="text-sm text-slate-500">Browse branch totals in a compact paged table instead of rendering the full list at once.</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <input
+          class="form-input branch-search"
+          [(ngModel)]="branchSearchTerm"
+          (ngModelChange)="onBranchSearchChange()"
+          placeholder="Search branch code or branch name"
+        />
+        <select class="form-input branch-size" [ngModel]="branchPageSize" (ngModelChange)="updateBranchPageSize($event)">
+          <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size === -1 ? 'All branches' : (size + ' branches') }}</option>
+        </select>
+        <span class="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">
+          {{ filteredBranchStats.length }} branches
+        </span>
+      </div>
+    </div>
+
+    <div class="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
+      <div class="overflow-x-auto report-table-wrap">
+        <table class="branch-summary-table">
+          <thead class="bg-slate-50 text-xs uppercase tracking-[0.12em] text-slate-500">
+            <tr>
+              <th class="px-4 py-3">Branch</th>
+              <th class="px-4 py-3">{{ summaryRangeLabel }} approved</th>
+              <th class="px-4 py-3">{{ summaryRangeLabel }} failed</th>
+              <th class="px-4 py-3">{{ summaryRangeLabel }} rejected</th>
+              <th class="px-4 py-3">{{ summaryRangeLabel }} amount</th>
+              <th class="px-4 py-3">{{ summaryRangeLabel }} agents</th>
+              <th class="px-4 py-3">Grand approved</th>
+              <th class="px-4 py-3">Grand failed</th>
+              <th class="px-4 py-3">Grand rejected</th>
+              <th class="px-4 py-3">Grand amount</th>
+              <th class="px-4 py-3">Grand agents</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 bg-white text-sm text-slate-700">
+            <tr *ngFor="let branch of pagedBranchStats">
+              <td class="px-4 py-3 font-semibold text-slate-900">{{ branch.branchCode }} - {{ branch.branchName }}</td>
+              <td class="px-4 py-3">{{ branch.today.approved }}</td>
+              <td class="px-4 py-3">{{ branch.today.failed }}</td>
+              <td class="px-4 py-3">{{ branch.today.rejected }}</td>
+              <td class="px-4 py-3 font-semibold text-slate-900">{{ branch.today.totalTransferredAmount | number:'1.2-2' }}</td>
+              <td class="px-4 py-3">{{ branch.today.distinctAgents }}</td>
+              <td class="px-4 py-3">{{ branch.grandTotal.approved }}</td>
+              <td class="px-4 py-3">{{ branch.grandTotal.failed }}</td>
+              <td class="px-4 py-3">{{ branch.grandTotal.rejected }}</td>
+              <td class="px-4 py-3 font-semibold text-slate-900">{{ branch.grandTotal.totalTransferredAmount | number:'1.2-2' }}</td>
+              <td class="px-4 py-3">{{ branch.grandTotal.distinctAgents }}</td>
+            </tr>
+            <tr *ngIf="!pagedBranchStats.length">
+              <td colspan="11" class="px-4 py-8 text-center text-sm text-slate-500">No branch summary records available for the selected range.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <p>Page {{ branchCurrentPage }} of {{ branchTotalPages }}</p>
+        <div class="flex gap-2">
+          <button class="btn-secondary btn-compact" type="button" (click)="changeBranchPage(branchCurrentPage - 1)" [disabled]="branchCurrentPage <= 1">Previous</button>
+          <button class="btn-secondary btn-compact" type="button" (click)="changeBranchPage(branchCurrentPage + 1)" [disabled]="branchCurrentPage >= branchTotalPages">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-card space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
+      <div>
+        <p class="section-eyebrow mb-1">Transaction register</p>
+        <p class="text-sm text-slate-500">Detailed transfer records based on the current filters.</p>
+      </div>
+      <span class="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">{{ totalRecords }} records</span>
+    </div>
+
+    <div class="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
+      <div class="overflow-x-auto report-table-wrap">
+        <table class="report-table">
+          <thead class="bg-slate-50 text-xs uppercase tracking-[0.14em] text-slate-500">
+            <tr>
+              <th class="px-4 py-3">Customer</th>
+              <th class="px-4 py-3">Account</th>
+              <th class="px-4 py-3">Branch</th>
+              <th class="px-4 py-3">Agent code</th>
+              <th class="px-4 py-3">Amount</th>
+              <th class="px-4 py-3">CBS Ref</th>
+              <th class="px-4 py-3">Telebirr Ref</th>
+              <th class="px-4 py-3">Status</th>
+              <th class="px-4 py-3">Maker</th>
+              <th class="px-4 py-3">Checker</th>
+              <th class="px-4 py-3">Created</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm text-slate-700">
+            <tr *ngFor="let record of records">
+              <td class="px-4 py-3 font-semibold text-slate-900">{{ record.customerName || 'Customer transfer' }}</td>
+              <td class="px-4 py-3">{{ record.accountNumber }}</td>
+              <td class="px-4 py-3">{{ record.accountBranchCode || '-' }}</td>
+              <td class="px-4 py-3">{{ record.telebirrShortCode || '-' }}</td>
+              <td class="px-4 py-3">{{ record.amount | number:'1.2-2' }} {{ record.currency }}</td>
+              <td class="px-4 py-3">{{ record.cbsReference || '-' }}</td>
+              <td class="px-4 py-3">{{ record.transactionId || '-' }}</td>
+              <td class="px-4 py-3">
+                <span class="rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="statusClass(record.status)">{{ record.status }}</span>
+              </td>
+              <td class="px-4 py-3">{{ record.makerUserName || '-' }}</td>
+              <td class="px-4 py-3">{{ record.checkerUserName || '-' }}</td>
+              <td class="px-4 py-3">{{ record.createdAt | date:'medium' }}</td>
+              <td class="px-4 py-3">
+                <div class="flex gap-2">
+                  <button class="btn-secondary btn-compact" type="button" (click)="selectRecord(record)">View</button>
+                  <button class="btn-secondary btn-compact" type="button" (click)="printReceipt(record)" [disabled]="!canPrintReceipt(record)">Print</button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="!loading && !records.length">
+              <td colspan="12" class="px-4 py-10 text-center text-sm text-slate-500">No transfer records found for the selected filters.</td>
+            </tr>
+            <tr *ngIf="loading">
+              <td colspan="12" class="px-4 py-10 text-center text-sm text-slate-500">Loading report data...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <p>Page {{ currentPage }} of {{ totalPages }}</p>
+        <div class="flex gap-2">
+          <button class="btn-secondary btn-compact" type="button" (click)="changePage(currentPage - 1)" [disabled]="currentPage <= 1">Previous</button>
+          <button class="btn-secondary btn-compact" type="button" (click)="changePage(currentPage + 1)" [disabled]="currentPage >= totalPages">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4" *ngIf="selectedRecord as record">
+    <div class="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-[30px] border border-white/80 bg-white p-6 shadow-2xl">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="section-eyebrow">Transaction details</p>
+          <h3 class="mt-2 text-2xl font-bold text-slate-900">{{ record.customerName || 'Customer transfer' }}</h3>
+          <p class="mt-2 text-sm text-slate-500">Account {{ record.accountNumber }} | Agent {{ record.telebirrShortCode || '-' }}</p>
+        </div>
+        <button class="btn-secondary btn-compact" type="button" (click)="closeDetailsModal()">Close</button>
+      </div>
+
+      <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Customer</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.customerName || '-' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Account</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.accountNumber }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Branch</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.accountBranchCode || '-' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Agent code</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.telebirrShortCode || '-' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Agent name</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.telebirrOrganizationName || '-' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Status</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.status }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Amount</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.amount | number:'1.2-2' }} {{ record.currency }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">CBS reference</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.cbsReference || '-' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Telebirr transaction</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.transactionId || '-' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Conversation ID</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.conversationId || '-' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">External reference</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.originatorConversationId || '-' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Service status</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.serviceStatus || '-' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Maker</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.makerUserName || '-' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Checker</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.checkerUserName || '-' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-sm text-slate-500">Created</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.createdAt | date:'medium' }}</p>
+        </div>
+        <div class="metric-card md:col-span-2 xl:col-span-3">
+          <p class="text-sm text-slate-500">Message</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ record.resultDesc || record.responseDesc || '-' }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

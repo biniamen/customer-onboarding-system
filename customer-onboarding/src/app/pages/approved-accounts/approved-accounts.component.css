@@ -1,0 +1,61 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+section {
+  min-width: 0;
+}
+
+.approved-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.approved-table {
+  min-width: 1180px;
+  width: 100%;
+  table-layout: auto;
+}
+
+.approved-cell-name {
+  min-width: 180px;
+}
+
+.approved-panel {
+  min-width: 0;
+  padding: 1.15rem;
+}
+
+.approved-page-title {
+  margin-top: 0.35rem;
+  font-size: 1.85rem;
+  line-height: 1.08;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.approved-page-copy {
+  margin-top: 0.45rem;
+  max-width: 40rem;
+  font-size: 0.94rem;
+  line-height: 1.7;
+  color: #475569;
+}
+
+.checker-info-card {
+  border-radius: 20px;
+  border: 1px solid #dde5ef;
+  background: linear-gradient(180deg, #fbfdff 0%, #f8fafc 100%);
+  padding: 0.95rem;
+}
+
+.checker-ready-card {
+  border-radius: 20px;
+  border: 1px solid #b8f0d0;
+  background: linear-gradient(180deg, #ecfdf5 0%, #dff7ee 100%);
+  padding: 0.95rem;
+}
