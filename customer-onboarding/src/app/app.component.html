@@ -49,11 +49,13 @@
           <div class="menu-bar mb-4" *ngIf="showOperationsNav">
             <a routerLink="/workspace" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="menu-item">Home</a>
             <a routerLink="/checker-dashboard" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'CHECKER'">Onboarding Queue</a>
+            <a routerLink="/rental-approvals" routerLinkActive="active" class="menu-item" *ngIf="rentalPaymentEnabled && currentUser?.role === 'RENTAL_CHECKER'">Rental Queue</a>
             <a routerLink="/telebirr-approvals" routerLinkActive="active" class="menu-item" *ngIf="telebirrEnabled && currentUser?.role === 'CHECKER'">Telebirr Queue</a>
             <a routerLink="/onboarding-report" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'REPORT_VIEWER' || currentUser?.role === 'KYC_UNIT'">Onboarding Report</a>
-            <a routerLink="/telebirr-report" routerLinkActive="active" class="menu-item" *ngIf="telebirrEnabled">Telebirr Report</a>
+            <a routerLink="/telebirr-report" routerLinkActive="active" class="menu-item" *ngIf="telebirrEnabled && (currentUser?.role === 'ADMIN' || currentUser?.role === 'MAKER' || currentUser?.role === 'CHECKER' || currentUser?.role === 'REPORT_VIEWER')">Telebirr Report</a>
             <a routerLink="/approved-accounts" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'MAKER' || currentUser?.role === 'CHECKER'">Approved Accounts</a>
             <a routerLink="/fan-verification" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'MAKER'">Onboarding</a>
+            <a routerLink="/rental-payment" routerLinkActive="active" class="menu-item" *ngIf="rentalPaymentEnabled && currentUser?.role === 'RENTAL_MAKER'">Rental Payment</a>
             <a routerLink="/telebirr-transfer" routerLinkActive="active" class="menu-item" *ngIf="telebirrEnabled && currentUser?.role === 'MAKER'">Telebirr Transfer</a>
             <a routerLink="/user-management" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN'">User Management</a>
             <a routerLink="/change-password" routerLinkActive="active" class="menu-item">Change Password</a>

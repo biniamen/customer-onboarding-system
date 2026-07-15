@@ -178,7 +178,7 @@ export interface AccountCreationResult {
   message: string;
 }
 
-export type UserRole = 'ADMIN' | 'MAKER' | 'CHECKER' | 'REPORT_VIEWER' | 'KYC_UNIT';
+export type UserRole = 'ADMIN' | 'MAKER' | 'CHECKER' | 'RENTAL_MAKER' | 'RENTAL_CHECKER' | 'REPORT_VIEWER' | 'KYC_UNIT';
 
 export interface AuthUser {
   id: string;
@@ -476,4 +476,93 @@ export interface TelebirrDashboardStats {
   grandTotal: TelebirrStatusBreakdown;
   branches: TelebirrBranchStats[];
   userStats?: TelebirrDashboardUserStats | null;
+}
+
+export interface RentalPaymentInquiryResult {
+  canProceed: boolean;
+  message: string;
+  manifestId?: string | null;
+  billId: string;
+  balerId: string;
+  customerId?: string | null;
+  customerName?: string | null;
+  tenantName?: string | null;
+  ownerName?: string | null;
+  ownerAccountNumber?: string | null;
+  propertyName?: string | null;
+  billDescription?: string | null;
+  reason?: string | null;
+  amountDue: number;
+  baseAmount: number;
+  penaltyAmount: number;
+  currentPeriod?: string | null;
+  penaltyType?: string | null;
+  isOverdue: boolean;
+  cashDebitGlAccount: string;
+  dueDate?: string | null;
+  rawResponse: string;
+}
+
+export type RentalPaymentMode = 'ACCOUNT' | 'CASH';
+
+export interface RentalPaymentSubmitRequest {
+  manifestId: string;
+  billId: string;
+  amount: number;
+  paymentMode: RentalPaymentMode;
+  debitAccount?: string | null;
+  paidAt?: string | null;
+  tellerId?: string | null;
+}
+
+export interface RentalPaymentRecord {
+  id: number;
+  manifestId: string;
+  billId: string;
+  balerId: string;
+  customerId?: string | null;
+  customerName?: string | null;
+  tenantName?: string | null;
+  ownerName?: string | null;
+  ownerAccountNumber?: string | null;
+  propertyName?: string | null;
+  billDescription?: string | null;
+  reason?: string | null;
+  amountDue: number;
+  baseAmount: number;
+  penaltyAmount: number;
+  paidAmount?: number | null;
+  status: string;
+  statusMessage?: string | null;
+  debitAccount?: string | null;
+  paymentMode?: RentalPaymentMode | string | null;
+  makerUserName?: string | null;
+  makerBranchCode?: string | null;
+  checkerUserName?: string | null;
+  checkerBranchCode?: string | null;
+  checkerComment?: string | null;
+  approvedAt?: string | null;
+  rejectedAt?: string | null;
+  rejectionReason?: string | null;
+  cbsReference?: string | null;
+  confirmationCode?: string | null;
+  paidAtLocation?: string | null;
+  tellerId?: string | null;
+  dueDate?: string | null;
+  paidAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RentalPaymentStatusResult {
+  manifestId: string;
+  billId: string;
+  status: string;
+  message?: string | null;
+  cbsReference?: string | null;
+  confirmationCode?: string | null;
+  amountDue: number;
+  paidAmount?: number | null;
+  paidAt?: string | null;
+  updatedAt: string;
 }

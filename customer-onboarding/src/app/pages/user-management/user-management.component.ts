@@ -18,7 +18,7 @@ import { UserManagementService } from 'src/app/services/user-management.service'
   styleUrls: ['./user-management.component.css']
 })
 export class UserManagementComponent implements OnInit {
-  readonly roles: UserRole[] = ['ADMIN', 'MAKER', 'CHECKER', 'REPORT_VIEWER', 'KYC_UNIT'];
+  readonly roles: UserRole[] = ['ADMIN', 'MAKER', 'CHECKER', 'RENTAL_MAKER', 'RENTAL_CHECKER', 'REPORT_VIEWER', 'KYC_UNIT'];
   readonly pageSizeOptions = [10, 20, 50, 100, -1];
 
   loading = false;

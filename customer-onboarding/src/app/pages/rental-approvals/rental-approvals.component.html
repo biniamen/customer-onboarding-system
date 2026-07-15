@@ -1,0 +1,262 @@
+<section class="space-y-6">
+  <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+    <div>
+      <p class="section-eyebrow">Rental checker queue</p>
+      <h1 class="section-title">Review submitted rental payment requests</h1>
+      <p class="section-copy">Validate the maker request, confirm debit and credit routing, then approve to post to CBS or reject with a clear reason.</p>
+    </div>
+
+    <button class="btn-secondary" type="button" (click)="loadRequests()">Refresh list</button>
+  </div>
+
+  <div *ngIf="pageError" class="alert-danger">{{ pageError }}</div>
+
+  <div class="grid gap-6 2xl:grid-cols-[minmax(0,0.95fr),minmax(0,1.05fr)]">
+    <div class="panel-card space-y-4">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex items-center gap-3">
+          <span class="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">{{ filteredRequests.length }} pending</span>
+          <span class="text-sm text-slate-500" *ngIf="loading">Loading queue...</span>
+        </div>
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <input class="input-field lg:w-[360px]" [ngModel]="searchTerm" (ngModelChange)="updatePendingSearch($event)" placeholder="Search by bill, customer, owner account, mode, or maker" />
+          <select class="input-field lg:w-[150px]" [ngModel]="pageSize" (ngModelChange)="updatePendingPageSize($event)">
+            <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size === -1 ? 'All / page' : (size + ' / page') }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="overflow-hidden rounded-[22px] border border-slate-200">
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-500">
+              <tr>
+                <th class="px-4 py-3 font-semibold">Customer</th>
+                <th class="px-4 py-3 font-semibold">Bill</th>
+                <th class="px-4 py-3 font-semibold">Mode</th>
+                <th class="px-4 py-3 font-semibold">Amount</th>
+                <th class="px-4 py-3 font-semibold">Maker</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 bg-white">
+              <tr
+                *ngFor="let record of pagedRequests"
+                class="cursor-pointer transition hover:bg-brand-50/40"
+                [ngClass]="selectedRequest?.id === record.id ? 'bg-brand-50/60' : ''"
+                (click)="selectRequest(record)"
+              >
+                <td class="px-4 py-3">
+                  <p class="font-semibold text-slate-900">{{ record.customerName || record.tenantName || 'Rental customer' }}</p>
+                  <p class="mt-1 text-xs text-slate-500">{{ record.propertyName || 'Property not returned' }}</p>
+                </td>
+                <td class="px-4 py-3 text-slate-700">
+                  <div>{{ record.billId }}</div>
+                  <div class="mt-1 text-xs text-slate-400">{{ record.manifestId }}</div>
+                </td>
+                <td class="px-4 py-3">
+                  <span class="rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="paymentModeBadge(record.paymentMode)">{{ record.paymentMode || 'ACCOUNT' }}</span>
+                </td>
+                <td class="px-4 py-3 text-slate-700">{{ record.amountDue | number:'1.2-2' }} ETB</td>
+                <td class="px-4 py-3 text-slate-700">{{ record.makerUserName || '-' }}</td>
+              </tr>
+              <tr *ngIf="!pagedRequests.length">
+                <td colspan="5" class="px-4 py-10 text-center text-sm text-slate-500">No pending rental payment requests for your branch.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between text-sm text-slate-500">
+        <span>Page {{ pageIndex + 1 }} of {{ totalPages }}</span>
+        <div class="flex gap-2">
+          <button class="btn-secondary btn-compact" type="button" (click)="previousPage()" [disabled]="pageIndex === 0 || pageSize === -1">Previous</button>
+          <button class="btn-secondary btn-compact" type="button" (click)="nextPage()" [disabled]="pageIndex >= totalPages - 1 || pageSize === -1">Next</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-5" *ngIf="selectedRequest as request">
+      <div class="grid gap-4 md:grid-cols-3">
+        <div class="stat-card">
+          <p class="stat-label">Customer</p>
+          <p class="stat-value">{{ request.customerName || request.tenantName || 'Rental customer' }}</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Amount</p>
+          <p class="stat-value">{{ request.amountDue | number:'1.2-2' }} ETB</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Status</p>
+          <span class="mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="statusBadge(request.status)">{{ request.status }}</span>
+        </div>
+      </div>
+
+      <div class="grid gap-5 xl:grid-cols-2">
+        <div class="panel-card">
+          <p class="section-eyebrow">Request details</p>
+          <div class="mt-4 space-y-3 text-sm text-slate-600">
+            <div class="flex justify-between gap-4"><span>Bill ID</span><span class="text-right font-semibold text-slate-900">{{ request.billId }}</span></div>
+            <div class="flex justify-between gap-4"><span>Biller ID</span><span class="text-right font-semibold text-slate-900">{{ request.balerId }}</span></div>
+            <div class="flex justify-between gap-4"><span>Manifest</span><span class="text-right font-semibold text-slate-900">{{ request.manifestId }}</span></div>
+            <div class="flex justify-between gap-4"><span>Debit account</span><span class="text-right font-semibold text-slate-900">{{ request.debitAccount || '-' }}</span></div>
+            <div class="flex justify-between gap-4"><span>Credit owner account</span><span class="text-right font-semibold text-slate-900">{{ request.ownerAccountNumber || '-' }}</span></div>
+            <div class="flex justify-between gap-4"><span>Owner</span><span class="text-right font-semibold text-slate-900">{{ request.ownerName || '-' }}</span></div>
+            <div class="flex justify-between gap-4"><span>Property</span><span class="text-right font-semibold text-slate-900">{{ request.propertyName || '-' }}</span></div>
+            <div class="flex justify-between gap-4"><span>Mode</span><span class="text-right font-semibold text-slate-900">{{ request.paymentMode || 'ACCOUNT' }}</span></div>
+            <div class="flex justify-between gap-4"><span>Paid at</span><span class="text-right font-semibold text-slate-900">{{ request.paidAtLocation || '-' }}</span></div>
+            <div class="flex justify-between gap-4"><span>Teller ID</span><span class="text-right font-semibold text-slate-900">{{ request.tellerId || '-' }}</span></div>
+            <div class="flex justify-between gap-4"><span>Penalty</span><span class="text-right font-semibold text-slate-900">{{ request.penaltyAmount | number:'1.2-2' }}</span></div>
+            <div class="flex justify-between gap-4"><span>Prepared by</span><span class="text-right font-semibold text-slate-900">{{ request.makerUserName || '-' }}</span></div>
+            <div class="flex justify-between gap-4"><span>Submitted on</span><span class="text-right font-semibold text-slate-900">{{ request.updatedAt | date:'medium' }}</span></div>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <p class="section-eyebrow">Checker action</p>
+          <div class="mt-4 space-y-4">
+            <div>
+              <label class="field-label">Approval note</label>
+              <textarea class="input-field min-h-[110px]" [(ngModel)]="checkerComment" placeholder="Optional note for approval"></textarea>
+            </div>
+            <div>
+              <label class="field-label">Rejection reason</label>
+              <textarea class="input-field min-h-[110px]" [(ngModel)]="rejectionReason" placeholder="Required only if you reject the request"></textarea>
+            </div>
+            <div class="flex flex-wrap gap-3">
+              <button class="btn-primary" type="button" [disabled]="acting" (click)="approveSelected()">
+                {{ acting ? 'Processing...' : 'Approve & post to CBS' }}
+              </button>
+              <button class="btn-secondary" type="button" [disabled]="acting" (click)="rejectSelected()">Reject request</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-card space-y-4">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex items-center gap-3">
+        <p class="section-eyebrow mb-0">Completed rental transactions</p>
+        <span class="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">{{ filteredCompletedRequests.length }} items</span>
+        <span class="text-sm text-slate-500" *ngIf="loadingCompleted">Loading...</span>
+      </div>
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <input class="input-field lg:w-[420px]" [ngModel]="completedSearchTerm" (ngModelChange)="updateCompletedSearch($event)" placeholder="Search by bill, customer, CBS ref, maker, checker, or status" />
+        <select class="input-field lg:w-[150px]" [ngModel]="completedPageSize" (ngModelChange)="updateCompletedPageSize($event)">
+          <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size === -1 ? 'All / page' : (size + ' / page') }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="overflow-hidden rounded-[22px] border border-slate-200">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-left text-sm">
+          <thead class="bg-slate-50 text-slate-500">
+            <tr>
+              <th class="px-4 py-3 font-semibold">Customer</th>
+              <th class="px-4 py-3 font-semibold">Bill</th>
+              <th class="px-4 py-3 font-semibold">Mode</th>
+              <th class="px-4 py-3 font-semibold">Amount</th>
+              <th class="px-4 py-3 font-semibold">CBS Ref</th>
+              <th class="px-4 py-3 font-semibold">Status</th>
+              <th class="px-4 py-3 font-semibold">Completed on</th>
+              <th class="px-4 py-3 font-semibold">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200 bg-white">
+            <tr *ngFor="let record of pagedCompletedRequests">
+              <td class="px-4 py-3">
+                <p class="font-semibold text-slate-900">{{ record.customerName || record.tenantName || 'Rental customer' }}</p>
+                <p class="mt-1 text-xs text-slate-500">Maker: {{ record.makerUserName || '-' }}</p>
+              </td>
+              <td class="px-4 py-3 text-slate-700">
+                <div>{{ record.billId }}</div>
+                <div class="mt-1 text-xs text-slate-400">{{ record.manifestId }}</div>
+              </td>
+              <td class="px-4 py-3">
+                <span class="rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="paymentModeBadge(record.paymentMode)">{{ record.paymentMode || 'ACCOUNT' }}</span>
+              </td>
+              <td class="px-4 py-3 text-slate-700">{{ (record.paidAmount ?? record.amountDue) | number:'1.2-2' }} ETB</td>
+              <td class="px-4 py-3 text-slate-700">{{ record.cbsReference || '-' }}</td>
+              <td class="px-4 py-3">
+                <span class="rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="statusBadge(record.status)">{{ record.status }}</span>
+              </td>
+              <td class="px-4 py-3 text-slate-700">{{ (record.approvedAt || record.rejectedAt || record.updatedAt) | date:'medium' }}</td>
+              <td class="px-4 py-3">
+                <button class="btn-secondary btn-compact" type="button" (click)="selectCompleted(record)">View</button>
+              </td>
+            </tr>
+            <tr *ngIf="!pagedCompletedRequests.length">
+              <td colspan="8" class="px-4 py-10 text-center text-sm text-slate-500">No completed rental payment records found for your branch.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+        <span>Page {{ completedPageIndex + 1 }} of {{ totalCompletedPages }}</span>
+        <div class="flex gap-2">
+          <button class="btn-secondary btn-compact" type="button" (click)="previousCompletedPage()" [disabled]="completedPageIndex === 0 || completedPageSize === -1">Previous</button>
+          <button class="btn-secondary btn-compact" type="button" (click)="nextCompletedPage()" [disabled]="completedPageIndex >= totalCompletedPages - 1 || completedPageSize === -1">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4" *ngIf="selectedCompleted as done">
+    <div class="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-[30px] border border-white/80 bg-white p-6 shadow-2xl">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="section-eyebrow">Completed rental transaction</p>
+          <h3 class="mt-2 text-2xl font-bold text-slate-900">{{ done.customerName || done.tenantName || 'Rental customer' }}</h3>
+          <p class="mt-2 text-sm text-slate-500">Bill {{ done.billId }} | Manifest {{ done.manifestId }}</p>
+        </div>
+        <button class="btn-secondary btn-compact" type="button" (click)="closeCompletedModal()">Close</button>
+      </div>
+
+      <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div class="metric-card">
+          <p class="text-slate-500">Status</p>
+          <span class="mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="statusBadge(done.status)">{{ done.status }}</span>
+        </div>
+        <div class="metric-card">
+          <p class="text-slate-500">Amount</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ (done.paidAmount ?? done.amountDue) | number:'1.2-2' }} ETB</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-slate-500">Mode</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ done.paymentMode || 'ACCOUNT' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-slate-500">Debit account</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ done.debitAccount || '-' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-slate-500">Credit owner account</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ done.ownerAccountNumber || '-' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-slate-500">CBS reference</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ done.cbsReference || '-' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-slate-500">Maker</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ done.makerUserName || '-' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-slate-500">Checker</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ done.checkerUserName || '-' }}</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-slate-500">Completed on</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ (done.approvedAt || done.rejectedAt || done.updatedAt) | date:'medium' }}</p>
+        </div>
+        <div class="metric-card md:col-span-2 xl:col-span-3">
+          <p class="text-slate-500">Response message</p>
+          <p class="mt-2 font-semibold text-slate-900">{{ done.statusMessage || done.rejectionReason || '-' }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

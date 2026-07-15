@@ -1,0 +1,320 @@
+<section class="space-y-6">
+  <div class="relative overflow-hidden rounded-[28px] border border-brand-100 bg-[linear-gradient(135deg,#f8fff7_0%,#eef9ff_48%,#fff8ea_100%)] p-6 shadow-panel">
+    <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_top_right,_rgba(10,132,255,0.16),_transparent_58%),radial-gradient(circle_at_bottom_right,_rgba(235,171,35,0.18),_transparent_48%)] lg:block"></div>
+    <div class="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+      <div class="max-w-3xl">
+        <p class="section-eyebrow">Rental payment portal</p>
+        <h1 class="section-title">Prepare rental payment requests for checker approval</h1>
+        <p class="section-copy">
+          Fetch the live rental bill, review penalty exposure and owner settlement details, then prepare the debit and credit routing for the rental checker queue.
+        </p>
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-2 xl:w-[360px]">
+        <div class="rounded-[22px] border border-white/70 bg-white/85 p-4 shadow-soft">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.26em] text-slate-400">Branch cash GL</p>
+          <p class="mt-3 text-2xl font-extrabold text-slate-900">{{ cashGlAccount }}</p>
+          <p class="mt-2 text-sm text-slate-500">Used automatically when cash is selected.</p>
+        </div>
+        <div class="rounded-[22px] border border-white/70 bg-white/85 p-4 shadow-soft">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.26em] text-slate-400">Posting branch</p>
+          <p class="mt-3 text-2xl font-extrabold text-slate-900">{{ currentBranchCode || '---' }}</p>
+          <p class="mt-2 text-sm text-slate-500">Cash postings use the logged-in user branch code.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="pageError" class="alert-danger">{{ pageError }}</div>
+
+  <div class="grid gap-6 xl:grid-cols-[minmax(0,1.12fr),minmax(320px,0.88fr)]">
+    <div class="space-y-6">
+      <div class="panel-card">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p class="section-eyebrow">Inquiry</p>
+            <h2 class="text-2xl font-bold text-slate-900">Fetch the pending rental bill</h2>
+            <p class="mt-2 text-sm leading-7 text-slate-600">Use the rental baler ID and bill ID from the branch request to pull the payable details from the rental system.</p>
+          </div>
+          <span class="rounded-full bg-brand-100 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-brand-700">Live middleware inquiry</span>
+        </div>
+
+        <div class="mt-6 soft-panel" [formGroup]="inquiryForm">
+          <div class="grid gap-4 xl:grid-cols-[minmax(0,0.42fr),minmax(0,0.42fr),auto] xl:items-end">
+            <div>
+              <label class="field-label">Rental Biller  ID</label>
+              <input class="input-field" formControlName="balerId" placeholder="Example: RNT00000" />
+              <p *ngIf="inquiryForm.controls.balerId.touched && inquiryForm.controls.balerId.invalid" class="field-error">Enter the rental baler ID before continuing.</p>
+            </div>
+            <div>
+              <label class="field-label">Bill ID</label>
+              <input class="input-field" formControlName="billId" placeholder="Example: TNT52888" />
+              <p *ngIf="inquiryForm.controls.billId.touched && inquiryForm.controls.billId.invalid" class="field-error">Enter the rental bill ID before continuing.</p>
+            </div>
+            <button class="btn-secondary h-12" type="button" [disabled]="loadingInquiry" (click)="submitInquiry()">
+              {{ loadingInquiry ? 'Fetching...' : 'Fetch pending bill' }}
+            </button>
+          </div>
+
+          <div *ngIf="inquiryResult" class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="metric-card">
+              <p class="text-sm text-slate-500">Total payable</p>
+              <p class="mt-2 text-2xl font-extrabold text-slate-900">{{ inquiryResult.amountDue | number:'1.2-2' }}</p>
+              <p class="mt-2 text-xs text-slate-500">Includes penalty when applicable.</p>
+            </div>
+            <div class="metric-card">
+              <p class="text-sm text-slate-500">Base rent</p>
+              <p class="mt-2 text-2xl font-extrabold text-slate-900">{{ inquiryResult.baseAmount | number:'1.2-2' }}</p>
+              <p class="mt-2 text-xs text-slate-500">Core rent amount before penalties.</p>
+            </div>
+            <div class="metric-card">
+              <p class="text-sm text-slate-500">Penalty</p>
+              <p class="mt-2 text-2xl font-extrabold" [ngClass]="inquiryResult.penaltyAmount > 0 ? 'text-amber-700' : 'text-slate-900'">
+                {{ inquiryResult.penaltyAmount | number:'1.2-2' }}
+              </p>
+              <p class="mt-2 text-xs text-slate-500">{{ inquiryResult.penaltyAmount > 0 ? (inquiryResult.penaltyType || 'Penalty applied') : 'No penalty applied' }}</p>
+            </div>
+            <div class="metric-card">
+              <p class="text-sm text-slate-500">Inquiry status</p>
+              <p class="mt-2 text-lg font-bold" [ngClass]="inquiryResult.canProceed ? 'text-emerald-700' : 'text-rose-700'">
+                {{ inquiryResult.canProceed ? 'Ready for submission' : 'Not payable' }}
+              </p>
+              <p class="mt-2 text-xs leading-6 text-slate-500">{{ inquiryResult.message }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card" [formGroup]="paymentForm">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p class="section-eyebrow">Payment setup</p>
+            <h2 class="text-2xl font-bold text-slate-900">Choose how the debit side should be posted</h2>
+            <p class="mt-2 text-sm leading-7 text-slate-600">The credit side always goes to the owner account returned from the rental service, and the checker performs the final posting step.</p>
+          </div>
+          <span class="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600">{{ inquiryResult?.manifestId || 'Fetch bill first' }}</span>
+        </div>
+
+        <div class="mt-6 grid gap-4 lg:grid-cols-2">
+          <button
+            *ngFor="let mode of paymentModes"
+            type="button"
+            class="rounded-[22px] border p-5 text-left transition"
+            [ngClass]="paymentModeClass(mode.value)"
+            (click)="paymentForm.controls.paymentMode.setValue(mode.value)"
+          >
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-lg font-bold">{{ mode.title }}</p>
+                <p class="mt-2 text-sm leading-6">{{ mode.description }}</p>
+              </div>
+              <span class="mt-1 inline-flex h-5 w-5 rounded-full border-2" [ngClass]="selectedPaymentMode === mode.value ? 'border-brand-600 bg-brand-600' : 'border-slate-300 bg-white'"></span>
+            </div>
+          </button>
+        </div>
+
+        <div class="mt-6 grid gap-4 xl:grid-cols-2">
+          <div class="soft-panel">
+            <label class="field-label">{{ isCashMode ? 'Debit GL account' : 'Debit customer account' }}</label>
+            <input
+              class="input-field"
+              formControlName="debitAccount"
+              [readonly]="isCashMode"
+              [placeholder]="isCashMode ? 'Cash GL is selected automatically' : 'Enter 13-digit customer account'"
+            />
+            <p *ngIf="isCashMode" class="mt-3 text-sm leading-6 text-slate-500">Cash mode uses GL <span class="font-semibold text-slate-900">{{ cashGlAccount }}</span> with branch <span class="font-semibold text-slate-900">{{ currentBranchCode || '---' }}</span>.</p>
+            <p *ngIf="isAccountMode" class="mt-3 text-sm leading-6 text-slate-500">Account mode requires a 13-digit debit account entered by the operator.</p>
+            <p *ngIf="isAccountMode && debitAccountControl.touched && debitAccountControl.invalid" class="field-error">Enter a valid 13-digit customer account number.</p>
+          </div>
+
+          <div class="soft-panel">
+            <label class="field-label">Credit owner account</label>
+            <input class="input-field bg-slate-50" [value]="creditSidePreview" readonly />
+            <p class="mt-3 text-sm leading-6 text-slate-500">This owner account is taken directly from the rental system response and used as the credit side in CBS.</p>
+          </div>
+        </div>
+
+        <div class="mt-6 grid gap-4 xl:grid-cols-[minmax(0,0.58fr),minmax(0,0.42fr)]">
+          <div class="soft-panel">
+            <div class="grid gap-4 md:grid-cols-2">
+              <div>
+                <label class="field-label">Paid at</label>
+                <input class="input-field" formControlName="paidAt" placeholder="Branch Portal" />
+                <p *ngIf="paymentForm.controls.paidAt.touched && paymentForm.controls.paidAt.invalid" class="field-error">Provide where the payment is being processed.</p>
+              </div>
+              <div>
+                <label class="field-label">Teller ID</label>
+                <input class="input-field" formControlName="tellerId" placeholder="Optional teller ID" />
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-[24px] border border-brand-100 bg-white/90 p-5 shadow-soft">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.26em] text-brand-700">Posting preview</p>
+            <div class="mt-4 space-y-3 text-sm text-slate-600">
+              <div class="flex items-start justify-between gap-4">
+                <span>Debit side</span>
+                <span class="text-right font-semibold text-slate-900">{{ debitSidePreview }}</span>
+              </div>
+              <div class="flex items-start justify-between gap-4">
+                <span>Credit side</span>
+                <span class="text-right font-semibold text-slate-900">{{ creditSidePreview }}</span>
+              </div>
+              <div class="flex items-start justify-between gap-4">
+                <span>Total amount</span>
+                <span class="text-right font-semibold text-slate-900">{{ (inquiryResult?.amountDue || 0) | number:'1.2-2' }} ETB</span>
+              </div>
+              <div class="flex items-start justify-between gap-4" *ngIf="inquiryResult?.penaltyAmount">
+                <span>Penalty note</span>
+                <span class="text-right font-semibold text-amber-700">{{ inquiryResult?.penaltyAmount | number:'1.2-2' }} {{ inquiryResult?.penaltyType || '' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 flex flex-wrap items-center gap-3">
+          <button class="btn-primary" type="button" [disabled]="submitting" (click)="submitPayment()">
+            {{ submitting ? 'Submitting...' : 'Submit for checker approval' }}
+          </button>
+          <p class="text-sm text-slate-500">CBS amount will use the rental service total payable amount after checker approval.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-6">
+      <div class="panel-card">
+        <p class="section-eyebrow">Bill summary</p>
+        <div class="mt-4 space-y-3 text-sm text-slate-600">
+          <div class="flex items-start justify-between gap-4">
+            <span>Manifest</span>
+            <span class="text-right font-semibold text-slate-900">{{ inquiryResult?.manifestId || 'Generated after inquiry' }}</span>
+          </div>
+          <div class="flex items-start justify-between gap-4">
+            <span>Property</span>
+            <span class="text-right font-semibold text-slate-900">{{ inquiryResult?.propertyName || '-' }}</span>
+          </div>
+          <div class="flex items-start justify-between gap-4">
+            <span>Tenant</span>
+            <span class="text-right font-semibold text-slate-900">{{ inquiryResult?.tenantName || inquiryResult?.customerName || '-' }}</span>
+          </div>
+          <div class="flex items-start justify-between gap-4">
+            <span>Owner</span>
+            <span class="text-right font-semibold text-slate-900">{{ inquiryResult?.ownerName || '-' }}</span>
+          </div>
+          <div class="flex items-start justify-between gap-4">
+            <span>Owner account</span>
+            <span class="text-right font-semibold text-slate-900">{{ inquiryResult?.ownerAccountNumber || '-' }}</span>
+          </div>
+          <div class="flex items-start justify-between gap-4">
+            <span>Current period</span>
+            <span class="text-right font-semibold text-slate-900">{{ inquiryResult?.currentPeriod || '-' }}</span>
+          </div>
+          <div class="flex items-start justify-between gap-4">
+            <span>Due date</span>
+            <span class="text-right font-semibold text-slate-900">{{ inquiryResult?.dueDate || '-' }}</span>
+          </div>
+          <div class="flex items-start justify-between gap-4">
+            <span>Rental status</span>
+            <span class="text-right font-semibold" [ngClass]="inquiryResult?.isOverdue ? 'text-amber-700' : 'text-slate-900'">
+              {{ inquiryResult?.isOverdue ? 'Overdue' : 'Active' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <p class="section-eyebrow">Narrative preview</p>
+        <div class="mt-4 rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-7 text-slate-600">
+          Rental payment |
+          Bill: {{ inquiryResult?.billId || '...' }} |
+          Manifest: {{ inquiryResult?.manifestId || '...' }}
+          <span *ngIf="inquiryResult?.propertyName">| Property: {{ inquiryResult?.propertyName }}</span>
+          <span *ngIf="inquiryResult?.penaltyAmount">| Penalty: {{ inquiryResult?.penaltyAmount | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-card">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <p class="section-eyebrow">Recent rental requests</p>
+        <h2 class="text-2xl font-bold text-slate-900">Track submitted requests and checker decisions</h2>
+      </div>
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <span class="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">{{ filteredRecentRequests.length }} items</span>
+        <input class="input-field h-10 lg:w-[340px]" [ngModel]="searchTerm" (ngModelChange)="updateSearch($event)" placeholder="Search by bill, manifest, customer, payment mode, or CBS reference" />
+        <select class="input-field h-10 lg:w-[150px]" [ngModel]="pageSize" (ngModelChange)="updatePageSize($event)">
+          <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size === -1 ? 'All / page' : (size + ' / page') }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mt-5 overflow-hidden rounded-[18px] border border-slate-200">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-left text-sm">
+          <thead class="bg-slate-50 text-slate-500">
+            <tr>
+              <th class="px-4 py-3 font-semibold">Customer / property</th>
+              <th class="px-4 py-3 font-semibold">Bill / manifest</th>
+              <th class="px-4 py-3 font-semibold">Payment mode</th>
+              <th class="px-4 py-3 font-semibold">Amount</th>
+              <th class="px-4 py-3 font-semibold">Accounts</th>
+              <th class="px-4 py-3 font-semibold">CBS ref</th>
+              <th class="px-4 py-3 font-semibold">Status</th>
+              <th class="px-4 py-3 font-semibold">Updated</th>
+              <th class="px-4 py-3 font-semibold"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200 bg-white">
+            <tr *ngFor="let record of pagedRecentRequests">
+              <td class="px-4 py-3 text-slate-900">
+                <div class="font-semibold">{{ record.customerName || record.tenantName || record.billId }}</div>
+                <div class="mt-1 text-xs text-slate-500">{{ record.propertyName || 'Rental property not returned' }}</div>
+              </td>
+              <td class="px-4 py-3 text-slate-700">
+                <div>{{ record.billId }}</div>
+                <div class="mt-1 text-xs text-slate-400">{{ record.manifestId }}</div>
+              </td>
+              <td class="px-4 py-3">
+                <span class="rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="paymentModeBadgeClass(record.paymentMode)">{{ record.paymentMode || 'ACCOUNT' }}</span>
+              </td>
+              <td class="px-4 py-3 text-slate-700">
+                <div class="font-semibold">{{ (record.paidAmount ?? record.amountDue) | number:'1.2-2' }} ETB</div>
+                <div class="mt-1 text-xs text-slate-500" *ngIf="record.penaltyAmount">Penalty: {{ record.penaltyAmount | number:'1.2-2' }}</div>
+              </td>
+              <td class="px-4 py-3 text-slate-700">
+                <div class="text-xs uppercase tracking-[0.22em] text-slate-400">Debit</div>
+                <div>{{ record.debitAccount || '-' }}</div>
+                <div class="mt-2 text-xs uppercase tracking-[0.22em] text-slate-400">Credit</div>
+                <div>{{ record.ownerAccountNumber || '-' }}</div>
+              </td>
+              <td class="px-4 py-3 text-slate-700">{{ record.cbsReference || '-' }}</td>
+              <td class="px-4 py-3">
+                <span class="rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="statusClass(record.status)">{{ record.status }}</span>
+                <p class="mt-2 text-xs text-slate-500">{{ record.statusMessage || '-' }}</p>
+              </td>
+              <td class="px-4 py-3 text-slate-700">{{ record.updatedAt | date:'medium' }}</td>
+              <td class="px-4 py-3">
+                <button class="btn-secondary btn-compact" type="button" (click)="refreshStatus(record)">Refresh</button>
+              </td>
+            </tr>
+            <tr *ngIf="!pagedRecentRequests.length && !loadingHistory">
+              <td colspan="9" class="px-4 py-10 text-center text-sm text-slate-500">No rental payment records found.</td>
+            </tr>
+            <tr *ngIf="loadingHistory">
+              <td colspan="9" class="px-4 py-10 text-center text-sm text-slate-500">Loading rental payment history...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+        <span>Page {{ pageIndex + 1 }} of {{ totalPages }}</span>
+        <div class="flex gap-2">
+          <button class="btn-secondary btn-compact" type="button" (click)="previousPage()" [disabled]="pageIndex === 0 || pageSize === -1">Previous</button>
+          <button class="btn-secondary btn-compact" type="button" (click)="nextPage()" [disabled]="pageIndex >= totalPages - 1 || pageSize === -1">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

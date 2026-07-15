@@ -9,6 +9,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   public DbSet<Branch> Branches => Set<Branch>();
   public DbSet<OnboardingRecord> OnboardingRecords => Set<OnboardingRecord>();
   public DbSet<TelebirrTransferRequest> TelebirrTransferRequests => Set<TelebirrTransferRequest>();
+  public DbSet<RentalPaymentRequest> RentalPaymentRequests => Set<RentalPaymentRequest>();
   public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -107,6 +108,42 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
       entity.Property(x => x.ResultDesc).HasMaxLength(500);
       entity.HasIndex(x => new { x.Status, x.MakerBranchId });
       entity.HasIndex(x => x.CreatedAt);
+    });
+
+    modelBuilder.Entity<RentalPaymentRequest>(entity =>
+    {
+      entity.HasIndex(x => x.ManifestId).IsUnique();
+      entity.HasIndex(x => new { x.Status, x.MakerBranchCode });
+      entity.HasIndex(x => x.CreatedAt);
+      entity.Property(x => x.ManifestId).HasMaxLength(40);
+      entity.Property(x => x.BillId).HasMaxLength(80);
+      entity.Property(x => x.BalerId).HasMaxLength(80);
+      entity.Property(x => x.CustomerId).HasMaxLength(80);
+      entity.Property(x => x.CustomerName).HasMaxLength(200);
+      entity.Property(x => x.TenantName).HasMaxLength(200);
+      entity.Property(x => x.OwnerName).HasMaxLength(200);
+      entity.Property(x => x.OwnerAccountNumber).HasMaxLength(32);
+      entity.Property(x => x.PropertyName).HasMaxLength(200);
+      entity.Property(x => x.BillDescription).HasMaxLength(400);
+      entity.Property(x => x.Reason).HasMaxLength(500);
+      entity.Property(x => x.AmountDue).HasPrecision(18, 2);
+      entity.Property(x => x.BaseAmount).HasPrecision(18, 2);
+      entity.Property(x => x.PenaltyAmount).HasPrecision(18, 2);
+      entity.Property(x => x.PaidAmount).HasPrecision(18, 2);
+      entity.Property(x => x.Status).HasMaxLength(40);
+      entity.Property(x => x.StatusMessage).HasMaxLength(500);
+      entity.Property(x => x.DebitAccount).HasMaxLength(32);
+      entity.Property(x => x.PaymentMode).HasMaxLength(16);
+      entity.Property(x => x.MakerUserName).HasMaxLength(150);
+      entity.Property(x => x.MakerBranchCode).HasMaxLength(3);
+      entity.Property(x => x.CheckerUserName).HasMaxLength(150);
+      entity.Property(x => x.CheckerBranchCode).HasMaxLength(3);
+      entity.Property(x => x.CheckerComment).HasMaxLength(300);
+      entity.Property(x => x.RejectionReason).HasMaxLength(300);
+      entity.Property(x => x.CbsReference).HasMaxLength(100);
+      entity.Property(x => x.ConfirmationCode).HasMaxLength(100);
+      entity.Property(x => x.PaidAtLocation).HasMaxLength(120);
+      entity.Property(x => x.TellerId).HasMaxLength(64);
     });
   }
 }

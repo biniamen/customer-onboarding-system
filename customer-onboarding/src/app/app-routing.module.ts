@@ -9,6 +9,8 @@ import { CustomerDetailsComponent } from './pages/customer-details/customer-deta
 import { FanVerificationComponent } from './pages/fan-verification/fan-verification.component';
 import { LoginComponent } from './pages/login/login.component';
 import { OnboardingReportComponent } from './pages/onboarding-report/onboarding-report.component';
+import { RentalApprovalsComponent } from './pages/rental-approvals/rental-approvals.component';
+import { RentalPaymentComponent } from './pages/rental-payment/rental-payment.component';
 import { ReviewSubmitComponent } from './pages/review-submit/review-submit.component';
 import { TelebirrApprovalsComponent } from './pages/telebirr-approvals/telebirr-approvals.component';
 import { TelebirrReportComponent } from './pages/telebirr-report/telebirr-report.component';
@@ -27,6 +29,10 @@ const routes: Routes = [
   { path: 'review-submit', component: ReviewSubmitComponent, canActivate: [AuthGuard], data: { roles: ['MAKER'] } },
   { path: 'account-creation', component: AccountCreationComponent, canActivate: [AuthGuard], data: { roles: ['MAKER'] } },
   { path: 'onboarding-report', component: OnboardingReportComponent, canActivate: [AuthGuard], data: { roles: ['ADMIN', 'REPORT_VIEWER', 'KYC_UNIT'] } },
+  ...(environment.features.rentalPaymentEnabled ? [
+    { path: 'rental-payment', component: RentalPaymentComponent, canActivate: [AuthGuard], data: { roles: ['RENTAL_MAKER'] } },
+    { path: 'rental-approvals', component: RentalApprovalsComponent, canActivate: [AuthGuard], data: { roles: ['RENTAL_CHECKER'] } }
+  ] : []),
   ...(environment.features.telebirrEnabled ? [
     { path: 'telebirr-transfer', component: TelebirrTransferComponent, canActivate: [AuthGuard], data: { roles: ['MAKER'] } },
     { path: 'telebirr-report', component: TelebirrReportComponent, canActivate: [AuthGuard], data: { roles: ['ADMIN', 'MAKER', 'CHECKER', 'REPORT_VIEWER'] } },

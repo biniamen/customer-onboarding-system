@@ -18,6 +18,8 @@ import { CustomerDetailsComponent } from './pages/customer-details/customer-deta
 import { FanVerificationComponent } from './pages/fan-verification/fan-verification.component';
 import { LoginComponent } from './pages/login/login.component';
 import { OnboardingReportComponent } from './pages/onboarding-report/onboarding-report.component';
+import { RentalApprovalsComponent } from './pages/rental-approvals/rental-approvals.component';
+import { RentalPaymentComponent } from './pages/rental-payment/rental-payment.component';
 import { ReviewSubmitComponent } from './pages/review-submit/review-submit.component';
 import { TelebirrApprovalsComponent } from './pages/telebirr-approvals/telebirr-approvals.component';
 import { TelebirrReportComponent } from './pages/telebirr-report/telebirr-report.component';
@@ -34,6 +36,8 @@ import { WorkspaceHomeComponent } from './pages/workspace-home/workspace-home.co
     ReviewSubmitComponent,
     AccountCreationComponent,
     OnboardingReportComponent,
+    RentalApprovalsComponent,
+    RentalPaymentComponent,
     ApprovedAccountsComponent,
     TelebirrTransferComponent,
     TelebirrApprovalsComponent,

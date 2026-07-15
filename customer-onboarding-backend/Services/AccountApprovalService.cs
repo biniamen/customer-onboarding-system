@@ -122,7 +122,7 @@ public class AccountApprovalService(
           <fcub:ACSTATNDR1>Y</fcub:ACSTATNDR1>
           <fcub:AC_STAT_NO_CR>N</fcub:AC_STAT_NO_CR>
           <fcub:AC_STAT_FROZEN>N</fcub:AC_STAT_FROZEN>
-          <fcub:AC_STAT_DE_POST>N</fcub:AC_STAT_DE_POST>
+          <fcub:AC_STAT_DE_POST>Y</fcub:AC_STAT_DE_POST>
           <fcub:DORMANT>N</fcub:DORMANT>
         </fcub:Sttms-Ac-Stat-Change-Full>
       </fcub:FCUBS_BODY>

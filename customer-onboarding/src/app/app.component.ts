@@ -15,6 +15,7 @@ export class AppComponent implements OnDestroy {
   title = 'customer-onboarding';
   readonly logoPath = 'assets/branding/GB.png';
   readonly telebirrEnabled = environment.features.telebirrEnabled;
+  readonly rentalPaymentEnabled = environment.features.rentalPaymentEnabled;
 
   readonly steps = [
     { label: 'Verify FAN', route: '/fan-verification' },
@@ -88,6 +89,14 @@ export class AppComponent implements OnDestroy {
       return 'Telebirr agent transfer';
     }
 
+    if (this.currentRoute.startsWith('/rental-payment')) {
+      return 'Rental payment workspace';
+    }
+
+    if (this.currentRoute.startsWith('/rental-approvals')) {
+      return 'Rental approval workspace';
+    }
+
     if (this.currentRoute.startsWith('/onboarding-report')) {
       return this.currentUser?.role === 'KYC_UNIT'
         ? 'KYC review reporting'
@@ -108,6 +117,8 @@ export class AppComponent implements OnDestroy {
 
     return this.currentUser?.role === 'CHECKER'
       ? 'Checker approval workspace'
+      : this.currentUser?.role === 'RENTAL_CHECKER'
+        ? 'Rental checker workspace'
       : 'Customer account opening';
   }
 
@@ -122,6 +133,14 @@ export class AppComponent implements OnDestroy {
 
     if (this.currentRoute.startsWith('/telebirr-transfer')) {
       return 'Verify the customer account, confirm the agent, and send the transfer for review.';
+    }
+
+    if (this.currentRoute.startsWith('/rental-payment')) {
+      return 'Fetch pending rental bills, prepare the payment routing, and submit the request for rental checker approval.';
+    }
+
+    if (this.currentRoute.startsWith('/rental-approvals')) {
+      return 'Review submitted rental payment requests for your branch and post them to CBS only after approval.';
     }
 
     if (this.currentRoute.startsWith('/onboarding-report')) {
@@ -144,6 +163,8 @@ export class AppComponent implements OnDestroy {
 
     return this.currentUser?.role === 'CHECKER'
       ? 'Review branch requests and approve ready cases.'
+      : this.currentUser?.role === 'RENTAL_CHECKER'
+        ? 'Review rental requests and approve only validated postings.'
       : 'Verify the customer, complete the form, and submit the request.';
   }
 

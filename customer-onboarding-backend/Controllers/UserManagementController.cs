@@ -23,6 +23,8 @@ public class UserManagementController(
     UserRoles.Admin,
     UserRoles.Maker,
     UserRoles.Checker,
+    UserRoles.RentalMaker,
+    UserRoles.RentalChecker,
     UserRoles.ReportViewer,
     UserRoles.KycUnit
   ];

@@ -2,7 +2,8 @@ export const environment = {
   production: false,
   siteUrl: 'https://www.alexmorganstudio.com',
   features: {
-    telebirrEnabled: false
+    telebirrEnabled: false,
+    rentalPaymentEnabled: true
   },
   api: {
     coreBaseUrl: '/api/core',

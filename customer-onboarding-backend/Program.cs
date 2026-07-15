@@ -13,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<FcubsOptions>(builder.Configuration.GetSection("Fcubs"));
 builder.Services.Configure<TelebirrOptions>(builder.Configuration.GetSection("Telebirr"));
+builder.Services.Configure<RentalPaymentOptions>(builder.Configuration.GetSection("RentalPayment"));
 builder.Services.Configure<List<SeedUserOptions>>(builder.Configuration.GetSection("SeedUsers"));
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -28,6 +29,7 @@ builder.Services.AddScoped<IFundingSourceLookupService, FundingSourceLookupServi
 builder.Services.AddScoped<IAccountClassLookupService, AccountClassLookupService>();
 builder.Services.AddHttpClient<IAccountApprovalService, AccountApprovalService>();
 builder.Services.AddHttpClient<ITelebirrTransferService, TelebirrTransferService>();
+builder.Services.AddHttpClient<IRentalPaymentService, RentalPaymentService>();
 
 var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key));
@@ -59,7 +61,7 @@ builder.Services.AddCors(options =>
 {
   options.AddPolicy("frontend", policy =>
   {
-    policy.WithOrigins("http://localhost:4200")
+    policy.WithOrigins("http://localhost:4200","http://localhost:56366")
       .AllowAnyHeader()
       .AllowAnyMethod();
   });

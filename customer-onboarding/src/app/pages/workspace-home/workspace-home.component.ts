@@ -9,6 +9,7 @@ import { environment } from 'src/environments/environment';
 })
 export class WorkspaceHomeComponent {
   readonly telebirrEnabled = environment.features.telebirrEnabled;
+  readonly rentalPaymentEnabled = environment.features.rentalPaymentEnabled;
 
   constructor(private auth: AuthService) {}
 
@@ -18,6 +19,14 @@ export class WorkspaceHomeComponent {
 
   get isChecker(): boolean {
     return this.auth.getCurrentUser()?.role === 'CHECKER';
+  }
+
+  get isRentalMaker(): boolean {
+    return this.auth.getCurrentUser()?.role === 'RENTAL_MAKER';
+  }
+
+  get isRentalChecker(): boolean {
+    return this.auth.getCurrentUser()?.role === 'RENTAL_CHECKER';
   }
 
   get isReportViewer(): boolean {
@@ -30,5 +39,10 @@ export class WorkspaceHomeComponent {
 
   get isAdmin(): boolean {
     return this.auth.getCurrentUser()?.role === 'ADMIN';
+  }
+
+  get canAccessTelebirrReport(): boolean {
+    const role = this.auth.getCurrentUser()?.role;
+    return role === 'ADMIN' || role === 'MAKER' || role === 'CHECKER' || role === 'REPORT_VIEWER';
   }
 }
