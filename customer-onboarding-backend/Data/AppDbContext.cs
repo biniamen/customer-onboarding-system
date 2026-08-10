@@ -10,6 +10,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   public DbSet<OnboardingRecord> OnboardingRecords => Set<OnboardingRecord>();
   public DbSet<TelebirrTransferRequest> TelebirrTransferRequests => Set<TelebirrTransferRequest>();
   public DbSet<RentalPaymentRequest> RentalPaymentRequests => Set<RentalPaymentRequest>();
+  public DbSet<PasswordMessageTemplate> PasswordMessageTemplates => Set<PasswordMessageTemplate>();
   public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -144,6 +145,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
       entity.Property(x => x.ConfirmationCode).HasMaxLength(100);
       entity.Property(x => x.PaidAtLocation).HasMaxLength(120);
       entity.Property(x => x.TellerId).HasMaxLength(64);
+    });
+
+    modelBuilder.Entity<PasswordMessageTemplate>(entity =>
+    {
+      entity.HasIndex(x => x.TemplateType).IsUnique();
+      entity.Property(x => x.TemplateType).HasMaxLength(40);
+      entity.Property(x => x.Title).HasMaxLength(120);
+      entity.Property(x => x.UpdatedByUserName).HasMaxLength(150);
     });
   }
 }

@@ -14,6 +14,7 @@ builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<FcubsOptions>(builder.Configuration.GetSection("Fcubs"));
 builder.Services.Configure<TelebirrOptions>(builder.Configuration.GetSection("Telebirr"));
 builder.Services.Configure<RentalPaymentOptions>(builder.Configuration.GetSection("RentalPayment"));
+builder.Services.Configure<PasswordManagementOptions>(builder.Configuration.GetSection("PasswordManagement"));
 builder.Services.Configure<List<SeedUserOptions>>(builder.Configuration.GetSection("SeedUsers"));
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -27,9 +28,11 @@ builder.Services.AddScoped<ISchemaUpgradeService, SchemaUpgradeService>();
 builder.Services.AddScoped<IBranchWorkingDateService, BranchWorkingDateService>();
 builder.Services.AddScoped<IFundingSourceLookupService, FundingSourceLookupService>();
 builder.Services.AddScoped<IAccountClassLookupService, AccountClassLookupService>();
+builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient<IAccountApprovalService, AccountApprovalService>();
 builder.Services.AddHttpClient<ITelebirrTransferService, TelebirrTransferService>();
 builder.Services.AddHttpClient<IRentalPaymentService, RentalPaymentService>();
+builder.Services.AddHttpClient<IPasswordManagementService, PasswordManagementService>();
 
 var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key));
