@@ -1,0 +1,198 @@
+<section class="space-y-6">
+  <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+    <div class="max-w-3xl">
+      <p class="section-eyebrow">Employee directory</p>
+      <h1 class="section-title">Search and update employee records</h1>
+      <p class="section-copy">Find employees quickly, update the record, and keep phone numbers current.</p>
+    </div>
+    <div class="rounded-[22px] border border-brand-100 bg-brand-50/70 px-4 py-3 text-sm text-slate-600 shadow-sm xl:max-w-[330px]">
+      <p class="font-semibold text-slate-900">HR access</p>
+      <p class="mt-1 leading-6">Use this page to maintain the internal employee directory used across the portal.</p>
+    </div>
+  </div>
+
+  <div *ngIf="pageError" class="alert-danger">{{ pageError }}</div>
+
+  <div class="panel-card space-y-4">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <p class="section-eyebrow mb-1">Filters</p>
+        <p class="text-sm text-slate-500">Search by name, reference, branch, department, position, or phone.</p>
+      </div>
+      <span class="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">{{ totalRecords }} records</span>
+    </div>
+
+    <div class="grid gap-3 xl:grid-cols-[2fr,1fr,160px,auto]">
+      <input class="form-input" [(ngModel)]="searchTerm" (keyup.enter)="applyFilters()" placeholder="Search employee, phone, branch, department, or position" />
+      <select class="form-input" [(ngModel)]="activeFilter" (change)="applyFilters()">
+        <option *ngFor="let option of activeOptions" [ngValue]="option.value">{{ option.label }}</option>
+      </select>
+      <select class="form-input" [ngModel]="pageSize" (ngModelChange)="updatePageSize($event)">
+        <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size === -1 ? 'All rows' : (size + ' / page') }}</option>
+      </select>
+      <div class="flex gap-2">
+        <button class="btn-secondary btn-compact flex-1" type="button" (click)="applyFilters()">Apply</button>
+        <button class="btn-secondary btn-compact flex-1" type="button" (click)="clearFilters()">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[1.2fr,0.8fr]">
+    <div class="panel-card space-y-4">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="section-eyebrow mb-1">Employee list</p>
+          <p class="text-sm text-slate-500">Select a row to open the edit form.</p>
+        </div>
+        <span class="mini-badge">Page {{ currentPage }} of {{ totalPages }}</span>
+      </div>
+
+      <div class="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
+        <div class="overflow-x-auto">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Phone</th>
+                <th>Branch</th>
+                <th>Department</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let record of records">
+                <td>
+                  <p class="table-title">{{ record.fullEmployeeName }}</p>
+                  <p class="table-copy">{{ record.employeeReference }}</p>
+                </td>
+                <td>{{ record.phoneNumber || '-' }}</td>
+                <td>{{ record.branchCode || '-' }}</td>
+                <td>{{ record.assignedUnitName || '-' }}</td>
+                <td>
+                  <span class="rounded-full px-3 py-1 text-xs font-semibold" [class.bg-emerald-100]="record.isActive" [class.text-emerald-700]="record.isActive" [class.bg-slate-100]="!record.isActive" [class.text-slate-600]="!record.isActive">
+                    {{ record.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                <td>
+                  <button class="btn-secondary btn-compact" type="button" (click)="selectRecord(record)">View</button>
+                </td>
+              </tr>
+              <tr *ngIf="!loading && !records.length">
+                <td colspan="6" class="px-4 py-10 text-center text-sm text-slate-500">No employee records found for the current filter.</td>
+              </tr>
+              <tr *ngIf="loading">
+                <td colspan="6" class="px-4 py-10 text-center text-sm text-slate-500">Loading employee records...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          <p>{{ totalRecords }} total</p>
+          <div class="flex gap-2">
+            <button class="btn-secondary btn-compact" type="button" (click)="changePage(currentPage - 1)" [disabled]="currentPage <= 1">Previous</button>
+            <button class="btn-secondary btn-compact" type="button" (click)="changePage(currentPage + 1)" [disabled]="currentPage >= totalPages">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-card space-y-5" *ngIf="selectedRecord as record; else employeePrompt">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="section-eyebrow">Employee details</p>
+          <h2 class="mt-2 text-2xl font-bold text-slate-900">{{ record.fullEmployeeName }}</h2>
+          <p class="mt-2 text-sm text-slate-500">{{ record.employeeReference }} | {{ record.branchCode || '-' }}</p>
+        </div>
+        <button class="btn-secondary btn-compact" type="button" (click)="closeEditor()">Close</button>
+      </div>
+
+      <form class="space-y-4" [formGroup]="editForm">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="field-label">Employee reference</label>
+            <input class="input-field" formControlName="employeeReference" />
+          </div>
+          <div>
+            <label class="field-label">Phone number</label>
+            <input class="input-field" formControlName="phoneNumber" />
+          </div>
+          <div>
+            <label class="field-label">Full name</label>
+            <input class="input-field" formControlName="fullEmployeeName" />
+          </div>
+          <div>
+            <label class="field-label">Branch code</label>
+            <input class="input-field" formControlName="branchCode" />
+          </div>
+          <div>
+            <label class="field-label">First name</label>
+            <input class="input-field" formControlName="firstName" />
+          </div>
+          <div>
+            <label class="field-label">Middle name</label>
+            <input class="input-field" formControlName="middleName" />
+          </div>
+          <div>
+            <label class="field-label">Last name</label>
+            <input class="input-field" formControlName="lastName" />
+          </div>
+          <div>
+            <label class="field-label">Gender</label>
+            <input class="input-field" formControlName="gender" />
+          </div>
+          <div>
+            <label class="field-label">Department</label>
+            <input class="input-field" formControlName="assignedUnitName" />
+          </div>
+          <div>
+            <label class="field-label">Position</label>
+            <input class="input-field" formControlName="currentPosition" />
+          </div>
+          <div>
+            <label class="field-label">Classification</label>
+            <input class="input-field" formControlName="classification" />
+          </div>
+          <div>
+            <label class="field-label">Branch grade</label>
+            <input class="input-field" formControlName="branchGrade" />
+          </div>
+          <div>
+            <label class="field-label">District</label>
+            <input class="input-field" formControlName="district" />
+          </div>
+          <div>
+            <label class="field-label">Employment date</label>
+            <input class="input-field" type="date" formControlName="employmentDate" />
+          </div>
+          <div class="md:col-span-2">
+            <label class="field-label">Contact address</label>
+            <input class="input-field" formControlName="contactAddress" />
+          </div>
+        </div>
+
+        <label class="flex items-center gap-3 rounded-[18px] border border-slate-200 px-4 py-3 text-sm text-slate-600">
+          <input type="checkbox" formControlName="isActive" />
+          Keep this employee active
+        </label>
+
+        <div class="flex flex-wrap gap-3">
+          <button class="btn-primary" type="button" (click)="save()" [disabled]="saving">
+            {{ saving ? 'Saving...' : 'Save changes' }}
+          </button>
+          <button class="btn-secondary" type="button" (click)="deleteSelected()" [disabled]="deleting">
+            {{ deleting ? 'Deleting...' : 'Delete record' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <ng-template #employeePrompt>
+      <div class="panel-card search-empty-state">
+        <p class="search-empty-title">No employee selected</p>
+        <p class="search-empty-copy">Open any row from the list to review and update the employee record.</p>
+      </div>
+    </ng-template>
+  </div>
+</section>

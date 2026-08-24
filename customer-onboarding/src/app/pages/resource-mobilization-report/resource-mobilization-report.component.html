@@ -1,0 +1,323 @@
+<section class="space-y-6">
+  <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+    <div class="max-w-3xl">
+      <p class="section-eyebrow">Resource mobilization reporting</p>
+      <h2 class="section-title">Monitor deposit campaign performance</h2>
+      <p class="section-copy">Dashboard and detailed register for branch or system-wide campaign activity.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="scope-badge" *ngIf="dashboardStats">{{ reportScopeLabel }}</span>
+      <button class="btn-secondary btn-compact" type="button" (click)="exportPdf()" [disabled]="exportBusy">Export Campaign PDF</button>
+      <button class="btn-secondary btn-compact" type="button" (click)="refreshAll()" [disabled]="loading || loadingDashboard">Refresh</button>
+    </div>
+  </div>
+
+  <div *ngIf="pageError" class="alert-danger">{{ pageError }}</div>
+
+  <div *ngIf="loadingDashboard && !dashboardStats" class="panel-card text-sm text-slate-500">Loading dashboard summary...</div>
+
+  <div class="grid gap-4 xl:grid-cols-3" *ngIf="dashboardStats">
+    <div class="leaderboard-panel">
+      <div class="leaderboard-head">
+        <div class="leaderboard-icon">TD</div>
+        <div>
+          <p class="section-eyebrow mb-1">Today</p>
+          <h3 class="text-xl font-semibold text-slate-900">Top 10 mobilizers</h3>
+        </div>
+      </div>
+      <div class="leaderboard-metrics" *ngIf="todayPeriod as period">
+        <div class="metric-card"><p class="text-xs uppercase tracking-[0.18em] text-slate-500">Approved</p><p class="mt-2 text-2xl font-bold text-emerald-700">{{ period.totals.approved }}</p></div>
+        <div class="metric-card"><p class="text-xs uppercase tracking-[0.18em] text-slate-500">Amount</p><p class="mt-2 text-2xl font-bold text-slate-900">{{ period.totals.approvedAmount | number:'1.2-2' }}</p></div>
+        <div class="metric-card"><p class="text-xs uppercase tracking-[0.18em] text-slate-500">Employees</p><p class="mt-2 text-2xl font-bold text-brand-700">{{ period.totals.distinctEmployees }}</p></div>
+      </div>
+      <div class="leaderboard-list" *ngIf="todayPeriod as period">
+        <div class="leader-item" *ngFor="let item of period.topMobilizers; let i = index">
+          <div class="leader-rank">{{ i + 1 }}</div>
+          <div class="leader-body">
+            <p class="leader-name">{{ item.employeeFullName }}</p>
+            <p class="leader-copy">{{ item.employeeDepartmentName || 'Department not set' }}</p>
+          </div>
+          <p class="leader-amount">{{ compactAmount(item.totalAmount) }} ETB</p>
+        </div>
+        <div class="search-empty-state" *ngIf="!period.topMobilizers.length">
+          <p class="search-empty-title">No approved mobilizers</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="leaderboard-panel">
+      <div class="leaderboard-head">
+        <div class="leaderboard-icon week">WK</div>
+        <div>
+          <p class="section-eyebrow mb-1">This week</p>
+          <h3 class="text-xl font-semibold text-slate-900">Top 10 mobilizers</h3>
+        </div>
+      </div>
+      <div class="leaderboard-metrics" *ngIf="weekPeriod as period">
+        <div class="metric-card"><p class="text-xs uppercase tracking-[0.18em] text-slate-500">Approved</p><p class="mt-2 text-2xl font-bold text-emerald-700">{{ period.totals.approved }}</p></div>
+        <div class="metric-card"><p class="text-xs uppercase tracking-[0.18em] text-slate-500">Amount</p><p class="mt-2 text-2xl font-bold text-slate-900">{{ period.totals.approvedAmount | number:'1.2-2' }}</p></div>
+        <div class="metric-card"><p class="text-xs uppercase tracking-[0.18em] text-slate-500">Employees</p><p class="mt-2 text-2xl font-bold text-brand-700">{{ period.totals.distinctEmployees }}</p></div>
+      </div>
+      <div class="leaderboard-list" *ngIf="weekPeriod as period">
+        <div class="leader-item" *ngFor="let item of period.topMobilizers; let i = index">
+          <div class="leader-rank">{{ i + 1 }}</div>
+          <div class="leader-body">
+            <p class="leader-name">{{ item.employeeFullName }}</p>
+            <p class="leader-copy">{{ item.employeeDepartmentName || 'Department not set' }}</p>
+          </div>
+          <p class="leader-amount">{{ compactAmount(item.totalAmount) }} ETB</p>
+        </div>
+        <div class="search-empty-state" *ngIf="!period.topMobilizers.length">
+          <p class="search-empty-title">No approved mobilizers</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="leaderboard-panel">
+      <div class="leaderboard-head">
+        <div class="leaderboard-icon month">MO</div>
+        <div>
+          <p class="section-eyebrow mb-1">This month</p>
+          <h3 class="text-xl font-semibold text-slate-900">Top 10 mobilizers</h3>
+        </div>
+      </div>
+      <div class="leaderboard-metrics" *ngIf="monthPeriod as period">
+        <div class="metric-card"><p class="text-xs uppercase tracking-[0.18em] text-slate-500">Approved</p><p class="mt-2 text-2xl font-bold text-emerald-700">{{ period.totals.approved }}</p></div>
+        <div class="metric-card"><p class="text-xs uppercase tracking-[0.18em] text-slate-500">Amount</p><p class="mt-2 text-2xl font-bold text-slate-900">{{ period.totals.approvedAmount | number:'1.2-2' }}</p></div>
+        <div class="metric-card"><p class="text-xs uppercase tracking-[0.18em] text-slate-500">Employees</p><p class="mt-2 text-2xl font-bold text-brand-700">{{ period.totals.distinctEmployees }}</p></div>
+      </div>
+      <div class="leaderboard-list" *ngIf="monthPeriod as period">
+        <div class="leader-item" *ngFor="let item of period.topMobilizers; let i = index">
+          <div class="leader-rank">{{ i + 1 }}</div>
+          <div class="leader-body">
+            <p class="leader-name">{{ item.employeeFullName }}</p>
+            <p class="leader-copy">{{ item.employeeDepartmentName || 'Department not set' }}</p>
+          </div>
+          <p class="leader-amount">{{ compactAmount(item.totalAmount) }} ETB</p>
+        </div>
+        <div class="search-empty-state" *ngIf="!period.topMobilizers.length">
+          <p class="search-empty-title">No approved mobilizers</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="report-view-tabs" role="tablist" aria-label="Resource mobilization report views">
+    <button type="button" [class.active]="activeView === 'campaign'" (click)="activeView = 'campaign'">Campaign report</button>
+    <button type="button" [class.active]="activeView === 'transactions'" (click)="activeView = 'transactions'">Transaction register</button>
+  </div>
+
+  <div class="panel-card space-y-4">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <p class="section-eyebrow mb-1">Report filters</p>
+        <p class="text-sm text-slate-500">Refine the detailed register.</p>
+      </div>
+      <span class="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">{{ totalRecords }} rows</span>
+    </div>
+
+    <div class="grid gap-3 xl:grid-cols-7">
+      <input class="form-input xl:col-span-2" [(ngModel)]="searchTerm" (keyup.enter)="applyFilters()" placeholder="Search request, employee, customer, account, branch, or transaction" />
+      <select class="form-input" [(ngModel)]="statusFilter" (change)="applyFilters()">
+        <option *ngFor="let status of statusOptions" [ngValue]="status">{{ status || 'All statuses' }}</option>
+      </select>
+      <select class="form-input" [(ngModel)]="productTypeFilter" (change)="applyFilters()">
+        <option *ngFor="let type of productTypeOptions" [ngValue]="type">{{ type || 'All products' }}</option>
+      </select>
+      <input class="form-input" type="date" [(ngModel)]="fromDate" />
+      <input class="form-input" type="date" [(ngModel)]="toDate" />
+      <div class="flex gap-2">
+        <button class="btn-secondary btn-compact flex-1" type="button" (click)="applyFilters()">Apply</button>
+        <button class="btn-secondary btn-compact flex-1" type="button" (click)="clearFilters()">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="campaign-register" *ngIf="activeView === 'campaign'">
+    <div class="campaign-register-header">
+      <p>GLOBAL BANK ETHIOPIA</p>
+      <h3>Resource Mobilization Campaign Report</h3>
+      <h4>{{ campaignPeriodLabel }}</h4>
+      <span>{{ reportScopeLabel }} | Approved deposit registrations</span>
+      <button class="campaign-export-button" type="button" (click)="exportPdf()" [disabled]="exportBusy">
+        {{ exportBusy ? 'Preparing PDF...' : 'Export Campaign PDF' }}
+      </button>
+    </div>
+
+    <div *ngIf="loadingCampaign" class="campaign-loading">Preparing campaign summary...</div>
+
+    <div class="campaign-table-wrap" *ngIf="!loadingCampaign">
+      <table class="campaign-summary-table">
+        <thead>
+          <tr>
+            <th rowspan="2">Sr.No</th>
+            <th rowspan="2">Department</th>
+            <th rowspan="2">Staff Name</th>
+            <th rowspan="2">Monthly Target / Budget</th>
+            <th colspan="3">Deposit Product Type</th>
+            <th rowspan="2">Total Deposit Mobilized</th>
+          </tr>
+          <tr>
+            <th>Demand</th>
+            <th>Saving</th>
+            <th>IFB</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let group of campaignGroups">
+            <tr *ngFor="let employee of group.employees; let index = index">
+              <td>{{ index + 1 }}</td>
+              <td>{{ group.name }}</td>
+              <td class="campaign-employee">{{ employee.employeeFullName }}</td>
+              <td class="number-cell">{{ employee.monthlyTargetAmount | number:'1.2-2' }}</td>
+              <td class="number-cell">{{ employee.demandAmount ? (employee.demandAmount | number:'1.2-2') : '' }}</td>
+              <td class="number-cell">{{ employee.savingAmount ? (employee.savingAmount | number:'1.2-2') : '' }}</td>
+              <td class="number-cell">{{ employee.ifbAmount ? (employee.ifbAmount | number:'1.2-2') : '' }}</td>
+              <td class="number-cell total-cell">{{ employee.totalDepositMobilized | number:'1.2-2' }}</td>
+            </tr>
+            <tr class="department-total-row">
+              <td colspan="2">{{ group.name }} Total</td>
+              <td class="number-cell">{{ group.employees.length }} employee{{ group.employees.length === 1 ? '' : 's' }}</td>
+              <td></td>
+              <td class="number-cell">{{ group.totals.demandAmount ? (group.totals.demandAmount | number:'1.2-2') : '' }}</td>
+              <td class="number-cell">{{ group.totals.savingAmount ? (group.totals.savingAmount | number:'1.2-2') : '' }}</td>
+              <td class="number-cell">{{ group.totals.ifbAmount ? (group.totals.ifbAmount | number:'1.2-2') : '' }}</td>
+              <td class="number-cell">{{ group.totals.totalDepositMobilized | number:'1.2-2' }}</td>
+            </tr>
+          </ng-container>
+          <tr *ngIf="!campaignGroups.length">
+            <td colspan="8" class="campaign-empty">No approved campaign registrations match the selected filters.</td>
+          </tr>
+        </tbody>
+        <tfoot *ngIf="campaignGroups.length">
+          <tr>
+            <td colspan="3">Grand Total</td>
+            <td class="number-cell">{{ campaignEmployeeCount }} employee{{ campaignEmployeeCount === 1 ? '' : 's' }}</td>
+            <td class="number-cell">{{ campaignGrandTotals.demandAmount | number:'1.2-2' }}</td>
+            <td class="number-cell">{{ campaignGrandTotals.savingAmount | number:'1.2-2' }}</td>
+            <td class="number-cell">{{ campaignGrandTotals.ifbAmount | number:'1.2-2' }}</td>
+            <td class="number-cell">{{ campaignGrandTotals.totalDepositMobilized | number:'1.2-2' }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+
+  <div class="panel-card space-y-4" *ngIf="activeView === 'transactions'">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <p class="section-eyebrow mb-1">Detailed register</p>
+        <p class="text-sm text-slate-500">Branch users see their branch only. Senior management and branch banking see the full system.</p>
+      </div>
+      <select class="form-input lg:w-[160px]" [ngModel]="pageSize" (ngModelChange)="updatePageSize($event)">
+        <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size === -1 ? 'All rows' : (size + ' rows') }}</option>
+      </select>
+    </div>
+
+    <div class="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
+      <div class="overflow-x-auto report-table-wrap">
+        <table class="campaign-report-table">
+          <thead class="bg-slate-50 text-[11px] uppercase tracking-[0.12em] text-slate-500">
+            <tr>
+              <th class="px-4 py-3">Sr.No</th>
+              <th class="px-4 py-3">Request Ref</th>
+              <th class="px-4 py-3">Mode</th>
+              <th class="px-4 py-3">Employee</th>
+              <th class="px-4 py-3">Monthly Target</th>
+              <th class="px-4 py-3">Product</th>
+              <th class="px-4 py-3">Mobilized Amount</th>
+              <th class="px-4 py-3">New Accounts</th>
+              <th class="px-4 py-3">Depositor Name</th>
+              <th class="px-4 py-3">Account Number</th>
+              <th class="px-4 py-3">Deposit Branch</th>
+              <th class="px-4 py-3">Transaction Ref</th>
+              <th class="px-4 py-3">Status</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm text-slate-700">
+            <tr *ngFor="let record of records; let i = index">
+              <td class="px-4 py-3">{{ ((currentPage - 1) * (pageSize === -1 ? records.length : pageSize)) + i + 1 }}</td>
+              <td class="px-4 py-3">
+                <p class="font-semibold text-slate-900">{{ record.registrationBatchReference || record.registrationReference }}</p>
+                <p class="mt-1 text-xs text-slate-500">{{ record.registrationReference }}</p>
+              </td>
+              <td class="px-4 py-3">
+                <span class="mini-badge">{{ record.isJointRegistration ? ('Joint x' + record.jointParticipantCount) : 'Single' }}</span>
+              </td>
+              <td class="px-4 py-3">
+                <p class="font-semibold text-slate-900">{{ record.employeeFullName }}</p>
+                <p class="mt-1 text-xs text-slate-500">{{ record.employeeReference }}</p>
+              </td>
+              <td class="px-4 py-3">{{ record.monthlyTargetAmount | number:'1.2-2' }}</td>
+              <td class="px-4 py-3">{{ record.depositProductType }}</td>
+              <td class="px-4 py-3 font-semibold text-slate-900">{{ record.totalDepositMobilized | number:'1.2-2' }}</td>
+              <td class="px-4 py-3">{{ record.newAccountCount }}</td>
+              <td class="px-4 py-3">{{ record.depositorCustomerName }}</td>
+              <td class="px-4 py-3">{{ record.depositorAccountNumber }}</td>
+              <td class="px-4 py-3">{{ record.depositBranchCode }}{{ record.depositBranchName ? (' - ' + record.depositBranchName) : '' }}</td>
+              <td class="px-4 py-3">{{ record.transactionReferenceNo }}</td>
+              <td class="px-4 py-3">
+                <span class="rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="statusClass(record.status)">{{ record.status }}</span>
+              </td>
+              <td class="px-4 py-3">
+                <button class="btn-secondary btn-compact" type="button" (click)="selectRecord(record)">View</button>
+              </td>
+            </tr>
+            <tr *ngIf="!loading && !records.length">
+              <td colspan="14" class="px-4 py-10 text-center text-sm text-slate-500">No resource mobilization records found for the selected filters.</td>
+            </tr>
+            <tr *ngIf="loading">
+              <td colspan="14" class="px-4 py-10 text-center text-sm text-slate-500">Loading report data...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <p>Page {{ currentPage }} of {{ totalPages }}</p>
+        <div class="flex gap-2">
+          <button class="btn-secondary btn-compact" type="button" (click)="changePage(currentPage - 1)" [disabled]="currentPage <= 1">Previous</button>
+          <button class="btn-secondary btn-compact" type="button" (click)="changePage(currentPage + 1)" [disabled]="currentPage >= totalPages">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4" *ngIf="selectedRecord as record">
+    <div class="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-[30px] border border-white/80 bg-white p-6 shadow-2xl">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="section-eyebrow">Resource mobilization details</p>
+          <h3 class="mt-2 text-2xl font-bold text-slate-900">{{ record.registrationBatchReference || record.registrationReference }}</h3>
+          <p class="mt-2 text-sm text-slate-500">Customer {{ record.depositorCustomerName }} | Transaction {{ record.transactionReferenceNo }}</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn-secondary btn-compact" type="button" (click)="deleteSelected()" *ngIf="isSystemAdmin" [disabled]="deleting">
+            {{ deleting ? 'Deleting...' : 'Delete' }}
+          </button>
+          <button class="btn-secondary btn-compact" type="button" (click)="closeDetailsModal()">Close</button>
+        </div>
+      </div>
+
+      <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div class="metric-card"><p class="text-sm text-slate-500">Mode</p><p class="mt-2 font-semibold text-slate-900">{{ record.isJointRegistration ? ('Joint x' + record.jointParticipantCount) : 'Single' }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Employee</p><p class="mt-2 font-semibold text-slate-900">{{ record.employeeFullName }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Employee branch</p><p class="mt-2 font-semibold text-slate-900">{{ record.employeeBranchCode || '-' }}{{ record.employeeBranchName ? (' - ' + record.employeeBranchName) : '' }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Department</p><p class="mt-2 font-semibold text-slate-900">{{ record.employeeDepartmentName || '-' }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Depositor</p><p class="mt-2 font-semibold text-slate-900">{{ record.depositorCustomerName }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Account number</p><p class="mt-2 font-semibold text-slate-900">{{ record.depositorAccountNumber }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Account class</p><p class="mt-2 font-semibold text-slate-900">{{ record.depositorAccountClass || '-' }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Value date</p><p class="mt-2 font-semibold text-slate-900">{{ record.transactionValueDate | date:'mediumDate' }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Monthly target</p><p class="mt-2 font-semibold text-slate-900">{{ record.monthlyTargetAmount | number:'1.2-2' }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Amount</p><p class="mt-2 font-semibold text-slate-900">{{ record.totalDepositMobilized | number:'1.2-2' }} {{ record.transactionCurrency }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">New accounts</p><p class="mt-2 font-semibold text-slate-900">{{ record.newAccountCount }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Status</p><p class="mt-2 font-semibold text-slate-900">{{ record.status }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Demand</p><p class="mt-2 font-semibold text-slate-900">{{ productMarker(record, 'DEMAND') }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Saving</p><p class="mt-2 font-semibold text-slate-900">{{ productMarker(record, 'SAVING') }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">IFB</p><p class="mt-2 font-semibold text-slate-900">{{ productMarker(record, 'IFB') }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Checker</p><p class="mt-2 font-semibold text-slate-900">{{ record.checkerUserName || '-' }}</p></div>
+      </div>
+    </div>
+  </div>
+</section>

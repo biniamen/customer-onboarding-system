@@ -11,7 +11,7 @@ namespace CustomerOnboarding.Backend.Controllers;
 
 [ApiController]
 [Route("api/core/admin")]
-[Authorize(Roles = UserRoles.Admin)]
+[Authorize(Roles = UserRoles.Admin + "," + UserRoles.SystemAdmin)]
 public class UserManagementController(
   AppDbContext dbContext,
   IPasswordHasher passwordHasher,
@@ -21,6 +21,10 @@ public class UserManagementController(
   private static readonly string[] AllowedRoles =
   [
     UserRoles.Admin,
+    UserRoles.SystemAdmin,
+    UserRoles.SeniorManagement,
+    UserRoles.BranchBanking,
+    UserRoles.Hr,
     UserRoles.Maker,
     UserRoles.Checker,
     UserRoles.RentalMaker,

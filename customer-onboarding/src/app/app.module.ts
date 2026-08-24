@@ -15,9 +15,16 @@ import { ApprovedAccountsComponent } from './pages/approved-accounts/approved-ac
 import { ChangePasswordComponent } from './pages/change-password/change-password.component';
 import { CheckerDashboardComponent } from './pages/checker-dashboard/checker-dashboard.component';
 import { CustomerDetailsComponent } from './pages/customer-details/customer-details.component';
+import { EmployeeDirectoryManagementComponent } from './pages/employee-directory-management/employee-directory-management.component';
 import { FanVerificationComponent } from './pages/fan-verification/fan-verification.component';
 import { LoginComponent } from './pages/login/login.component';
 import { OnboardingReportComponent } from './pages/onboarding-report/onboarding-report.component';
+import { PasswordMessageAuditLogComponent } from './pages/password-message-audit-log/password-message-audit-log.component';
+import { PasswordManagementComponent } from './pages/password-management/password-management.component';
+import { PasswordSmsTemplatesComponent } from './pages/password-sms-templates/password-sms-templates.component';
+import { ResourceMobilizationApprovalsComponent } from './pages/resource-mobilization-approvals/resource-mobilization-approvals.component';
+import { ResourceMobilizationReportComponent } from './pages/resource-mobilization-report/resource-mobilization-report.component';
+import { ResourceMobilizationComponent } from './pages/resource-mobilization/resource-mobilization.component';
 import { RentalApprovalsComponent } from './pages/rental-approvals/rental-approvals.component';
 import { RentalPaymentComponent } from './pages/rental-payment/rental-payment.component';
 import { ReviewSubmitComponent } from './pages/review-submit/review-submit.component';
@@ -33,9 +40,16 @@ import { WorkspaceHomeComponent } from './pages/workspace-home/workspace-home.co
     ChangePasswordComponent,
     FanVerificationComponent,
     CustomerDetailsComponent,
+    EmployeeDirectoryManagementComponent,
     ReviewSubmitComponent,
     AccountCreationComponent,
     OnboardingReportComponent,
+    PasswordMessageAuditLogComponent,
+    PasswordManagementComponent,
+    PasswordSmsTemplatesComponent,
+    ResourceMobilizationComponent,
+    ResourceMobilizationApprovalsComponent,
+    ResourceMobilizationReportComponent,
     RentalApprovalsComponent,
     RentalPaymentComponent,
     ApprovedAccountsComponent,

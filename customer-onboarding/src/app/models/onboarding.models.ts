@@ -178,7 +178,18 @@ export interface AccountCreationResult {
   message: string;
 }
 
-export type UserRole = 'ADMIN' | 'MAKER' | 'CHECKER' | 'RENTAL_MAKER' | 'RENTAL_CHECKER' | 'REPORT_VIEWER' | 'KYC_UNIT';
+export type UserRole =
+  | 'ADMIN'
+  | 'SYSTEM_ADMIN'
+  | 'SENIOR_MANAGEMENT'
+  | 'BRANCH_BANKING'
+  | 'HR'
+  | 'MAKER'
+  | 'CHECKER'
+  | 'RENTAL_MAKER'
+  | 'RENTAL_CHECKER'
+  | 'REPORT_VIEWER'
+  | 'KYC_UNIT';
 
 export interface AuthUser {
   id: string;
@@ -243,6 +254,189 @@ export interface UpdateUserRequest {
 export interface ResetUserPasswordRequest {
   newPassword: string;
   forcePasswordChange: boolean;
+}
+
+export interface ExternalDirectoryUser {
+  id: string;
+  employeeId: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  fullEmployeeName: string;
+  gender: string;
+  email: string;
+  phoneNumber: string;
+  isActive: boolean;
+  branchId?: string | null;
+  branchName?: string | null;
+  branchCode?: string | null;
+  departmentId?: string | null;
+  departmentName?: string | null;
+  roleId?: string | null;
+  roleName?: string | null;
+  positionId?: string | null;
+  positionName?: string | null;
+  mustChangePassword: boolean;
+  lastPasswordResetAt?: string | null;
+  lastPasswordResetByUserId?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface PasswordMessageTemplate {
+  templateType: string;
+  title: string;
+  body: string;
+  isActive: boolean;
+  updatedAtUtc: string;
+  updatedByUserName: string;
+}
+
+export interface UpdatePasswordMessageTemplateRequest {
+  title: string;
+  body: string;
+  isActive: boolean;
+}
+
+export interface SendPasswordResetSmsRequest {
+  externalUserId: string;
+  systemName: string;
+  password: string;
+}
+
+export interface SendNewUserCredentialSmsRequest {
+  externalUserId: string;
+  systemName: string;
+  username: string;
+  password: string;
+}
+
+export interface PasswordMessageDispatchResult {
+  templateType: string;
+  externalUserId: string;
+  fullEmployeeName: string;
+  phoneNumber: string;
+  systemName: string;
+  messageBody: string;
+  sent: boolean;
+  providerMessage: string;
+  rawProviderResponse: string;
+  sentAtUtc: string;
+}
+
+export interface EmployeeDirectoryStats {
+  totalEmployees: number;
+  activeEmployees: number;
+  lastImportedAtUtc?: string | null;
+  lastSourceFileName?: string | null;
+}
+
+export interface EmployeeDirectoryImportResult {
+  sourceFileName: string;
+  sourceSheetName: string;
+  processedRows: number;
+  insertedRows: number;
+  updatedRows: number;
+  deactivatedRows: number;
+  totalActiveEmployees: number;
+  importedAtUtc: string;
+}
+
+export interface EmployeeDirectoryEntryRecord {
+  id: string;
+  sequenceNumber?: number | null;
+  employeeReference: string;
+  employeeCode: string;
+  internalNumber: string;
+  internalNumberExtension: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  fullEmployeeName: string;
+  gender: string;
+  contactAddress: string;
+  phoneNumber: string;
+  currentPosition: string;
+  classification: string;
+  assignedUnitName: string;
+  branchGrade: string;
+  branchCode: string;
+  district: string;
+  employmentDate?: string | null;
+  isActive: boolean;
+  sourceFileName: string;
+  sourceSheetName: string;
+  importedAtUtc: string;
+  updatedAtUtc: string;
+}
+
+export interface EmployeeDirectoryPagedResponse {
+  page: number;
+  pageSize: number;
+  totalRecords: number;
+  totalPages: number;
+  items: EmployeeDirectoryEntryRecord[];
+}
+
+export interface EmployeeDirectoryQuery {
+  search?: string;
+  branchCode?: string;
+  isActive?: boolean;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface UpdateEmployeeDirectoryEntryRequest {
+  sequenceNumber?: number | null;
+  employeeReference: string;
+  employeeCode: string;
+  internalNumber: string;
+  internalNumberExtension: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  fullEmployeeName: string;
+  gender: string;
+  contactAddress: string;
+  phoneNumber: string;
+  currentPosition: string;
+  classification: string;
+  assignedUnitName: string;
+  branchGrade: string;
+  branchCode: string;
+  district: string;
+  employmentDate?: string | null;
+  isActive: boolean;
+}
+
+export interface PasswordMessageAuditLogItem {
+  id: number;
+  action: string;
+  operatorUsername?: string | null;
+  operatorFullName?: string | null;
+  recipientFullEmployeeName?: string | null;
+  recipientPhoneNumber?: string | null;
+  systemName?: string | null;
+  provisionedUsername?: string | null;
+  sent?: boolean | null;
+  ipAddress?: string | null;
+  createdAtUtc: string;
+}
+
+export interface PasswordMessageAuditLogResponse {
+  page: number;
+  pageSize: number;
+  totalRecords: number;
+  totalPages: number;
+  items: PasswordMessageAuditLogItem[];
+}
+
+export interface PasswordMessageAuditLogQuery {
+  search?: string;
+  fromDate?: string;
+  toDate?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface ApprovalSubmissionPayload {
@@ -565,4 +759,160 @@ export interface RentalPaymentStatusResult {
   paidAmount?: number | null;
   paidAt?: string | null;
   updatedAt: string;
+}
+
+export interface ResourceMobilizationEmployeeSearchResult {
+  id: string;
+  employeeReference: string;
+  fullName: string;
+  phoneNumber?: string | null;
+  branchCode?: string | null;
+  branchName?: string | null;
+  departmentName?: string | null;
+  positionName?: string | null;
+  classification?: string | null;
+  isActive: boolean;
+  hasExistingRegistration: boolean;
+  existingMonthlyTargetAmount?: number | null;
+  existingNewAccountCount?: number | null;
+}
+
+export interface ResourceMobilizationTransactionLookupRequest {
+  transactionReferenceNo?: string | null;
+  accountNumber?: string | null;
+  fromDate?: string | null;
+  toDate?: string | null;
+  limit?: number;
+}
+
+export interface ResourceMobilizationTransactionResult {
+  transactionReferenceNo: string;
+  depositBranchCode: string;
+  depositBranchName: string;
+  accountNumber: string;
+  currency: string;
+  amount: number;
+  valueDate: string;
+  customerNumber?: string | null;
+  customerName: string;
+  accountClass?: string | null;
+  suggestedProductType: 'DEMAND' | 'SAVING' | 'IFB' | string;
+  rawPayload: string;
+  alreadyRegistered: boolean;
+  existingRecordId?: number | null;
+  existingRegistrationReference?: string | null;
+  existingStatus?: string | null;
+  existingEmployeeReference?: string | null;
+  existingEmployeeFullName?: string | null;
+}
+
+export interface ResourceMobilizationSubmitRequest {
+  employeeDirectoryEntryId?: string | null;
+  employeeDirectoryEntryIds?: string[] | null;
+  isJointRegistration?: boolean;
+  monthlyTargetAmount: number;
+  depositProductType: 'DEMAND' | 'SAVING' | 'IFB' | string;
+  newAccountCount: number;
+  transactionReferenceNo: string;
+  accountNumber: string;
+  depositorCustomerName?: string | null;
+}
+
+export interface ResourceMobilizationRecord {
+  id: number;
+  registrationReference: string;
+  registrationBatchReference: string;
+  isJointRegistration: boolean;
+  jointParticipantCount: number;
+  jointSequenceNumber: number;
+  employeeReference: string;
+  employeeFullName: string;
+  employeePhoneNumber?: string | null;
+  employeeBranchCode?: string | null;
+  employeeBranchName?: string | null;
+  employeeDepartmentName?: string | null;
+  employeePositionName?: string | null;
+  employeeClassification?: string | null;
+  monthlyTargetAmount: number;
+  depositProductType: 'DEMAND' | 'SAVING' | 'IFB' | string;
+  sourceTransactionAmount: number;
+  totalDepositMobilized: number;
+  newAccountCount: number;
+  depositorCustomerName: string;
+  depositorCustomerNumber?: string | null;
+  depositorAccountNumber: string;
+  depositorAccountClass?: string | null;
+  transactionReferenceNo: string;
+  depositBranchCode: string;
+  depositBranchName?: string | null;
+  transactionCurrency: string;
+  transactionValueDate: string;
+  status: string;
+  makerUserName?: string | null;
+  makerBranchCode?: string | null;
+  makerBranchName?: string | null;
+  checkerUserName?: string | null;
+  checkerBranchCode?: string | null;
+  checkerBranchName?: string | null;
+  checkerComment?: string | null;
+  rejectionReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  approvedAt?: string | null;
+  rejectedAt?: string | null;
+}
+
+export interface ResourceMobilizationReportQuery {
+  search?: string;
+  status?: string;
+  depositProductType?: string;
+  fromDate?: string;
+  toDate?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
+}
+
+export interface ResourceMobilizationReportResponse {
+  page: number;
+  pageSize: number;
+  totalRecords: number;
+  totalPages: number;
+  items: ResourceMobilizationRecord[];
+}
+
+export interface ResourceMobilizationStatusBreakdown {
+  total: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+  approvedAmount: number;
+  distinctEmployees: number;
+}
+
+export interface ResourceMobilizationLeaderboardItem {
+  employeeReference: string;
+  employeeFullName: string;
+  employeeDepartmentName?: string | null;
+  employeeBranchCode?: string | null;
+  employeeBranchName?: string | null;
+  totalAmount: number;
+  transactionCount: number;
+  totalNewAccounts: number;
+}
+
+export interface ResourceMobilizationDashboardPeriod {
+  rangeStartUtc: string;
+  rangeEndUtc: string;
+  totals: ResourceMobilizationStatusBreakdown;
+  topMobilizers: ResourceMobilizationLeaderboardItem[];
+}
+
+export interface ResourceMobilizationDashboardStats {
+  scope: string;
+  branchCode?: string | null;
+  today: ResourceMobilizationDashboardPeriod;
+  thisWeek: ResourceMobilizationDashboardPeriod;
+  thisMonth: ResourceMobilizationDashboardPeriod;
 }

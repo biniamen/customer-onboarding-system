@@ -1,0 +1,342 @@
+.scope-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: rgba(20, 83, 45, 0.08);
+  color: #166534;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.45rem 0.85rem;
+}
+
+.report-view-tabs {
+  display: inline-flex;
+  gap: 0.3rem;
+  border: 1px solid rgba(20, 83, 45, 0.14);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.32rem;
+}
+
+.report-view-tabs button {
+  border: 0;
+  border-radius: 0.72rem;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 0.58rem 0.9rem;
+}
+
+.report-view-tabs button.active {
+  background: #14532d;
+  color: #fff;
+  box-shadow: 0 7px 16px rgba(20, 83, 45, 0.18);
+}
+
+.campaign-register {
+  overflow: hidden;
+  border: 1px solid rgba(20, 83, 45, 0.2);
+  border-radius: 1.35rem;
+  background: #fff;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.07);
+}
+
+.campaign-register-header {
+  border-bottom: 4px solid #eab308;
+  background:
+    radial-gradient(circle at right top, rgba(234, 179, 8, 0.22), transparent 36%),
+    linear-gradient(135deg, #064e2b, #166534 58%, #14532d);
+  color: #fff;
+  padding: 1.8rem 1.5rem 1.55rem;
+  text-align: center;
+}
+
+.campaign-register-header p,
+.campaign-register-header h3,
+.campaign-register-header h4,
+.campaign-register-header span {
+  margin: 0;
+}
+
+.campaign-register-header p {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.17em;
+}
+
+.campaign-register-header h3 {
+  margin-top: 0.35rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.25rem, 2.2vw, 1.72rem);
+  font-weight: 800;
+}
+
+.campaign-register-header h4 {
+  margin-top: 0.35rem;
+  color: #fef3c7;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.campaign-register-header span {
+  display: inline-block;
+  margin-top: 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.11);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.36rem 0.75rem;
+}
+
+.campaign-export-button {
+  display: block;
+  margin: 0.9rem auto 0;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  background: #fff;
+  color: #14532d;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0.5rem 0.9rem;
+}
+
+.campaign-export-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.campaign-loading,
+.campaign-empty {
+  color: #64748b;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.campaign-loading {
+  padding: 2.5rem 1.5rem;
+}
+
+.campaign-table-wrap {
+  overflow-x: auto;
+  padding: 1rem;
+}
+
+.campaign-summary-table {
+  min-width: 940px;
+  width: 100%;
+  border-collapse: collapse;
+  color: #172033;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.82rem;
+}
+
+.campaign-summary-table th,
+.campaign-summary-table td {
+  border: 1px solid #879b8e;
+  padding: 0.43rem 0.55rem;
+  vertical-align: middle;
+}
+
+.campaign-summary-table thead th {
+  background: #edf4ee;
+  color: #064e2b;
+  font-family: Arial, sans-serif;
+  font-size: 0.71rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.campaign-summary-table tbody tr:nth-child(even):not(.department-total-row) {
+  background: #fbfdfb;
+}
+
+.campaign-summary-table .campaign-employee {
+  font-weight: 700;
+}
+
+.campaign-summary-table .number-cell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.campaign-summary-table .total-cell,
+.campaign-summary-table .department-total-row .number-cell,
+.campaign-summary-table tfoot .number-cell {
+  font-weight: 800;
+}
+
+.department-total-row {
+  background: #e8f1e9;
+  color: #064e2b;
+  font-weight: 800;
+}
+
+.campaign-summary-table tfoot {
+  background: #14532d;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  font-weight: 800;
+}
+
+.campaign-summary-table tfoot td {
+  border-color: #14532d;
+  font-size: 0.88rem;
+  padding: 0.6rem;
+}
+
+.campaign-empty {
+  padding: 2rem !important;
+}
+
+.mini-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(20, 83, 45, 0.08);
+  color: #166534;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.35rem 0.7rem;
+  white-space: nowrap;
+}
+
+.search-empty-state {
+  border: 1px dashed rgba(203, 213, 225, 0.95);
+  border-radius: 22px;
+  background: rgba(248, 250, 252, 0.72);
+  padding: 1.15rem 1.1rem;
+}
+
+.search-empty-title {
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.leaderboard-panel {
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(248,250,252,0.95));
+  padding: 1.25rem;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.05);
+}
+
+.leaderboard-head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.leaderboard-icon {
+  display: inline-flex;
+  height: 3.4rem;
+  width: 3.4rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #14532d, #eab308);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.leaderboard-icon.week {
+  background: linear-gradient(135deg, #0f766e, #38bdf8);
+}
+
+.leaderboard-icon.month {
+  background: linear-gradient(135deg, #854d0e, #fb7185);
+}
+
+.leaderboard-metrics {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 1rem;
+}
+
+.leaderboard-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.leader-item {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 20px;
+  background: rgba(248, 250, 252, 0.88);
+  padding: 0.85rem 0.95rem;
+}
+
+.leader-rank {
+  display: inline-flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(20, 83, 45, 0.12);
+  color: #166534;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.leader-name {
+  color: #0f172a;
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.leader-copy {
+  margin-top: 0.2rem;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.leader-amount {
+  color: #0f172a;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.campaign-report-table th,
+.campaign-report-table td {
+  white-space: nowrap;
+}
+
+@media (max-width: 980px) {
+  .leaderboard-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .leader-item {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .leader-amount {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .campaign-register-header {
+    padding: 1.35rem 1rem 1.2rem;
+  }
+
+  .campaign-table-wrap {
+    padding: 0.65rem;
+  }
+}

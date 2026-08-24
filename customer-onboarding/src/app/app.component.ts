@@ -81,12 +81,42 @@ export class AppComponent implements OnDestroy {
       return 'User administration';
     }
 
+    if (this.currentRoute.startsWith('/password-management')) {
+      return 'Password communication';
+    }
+
+    if (this.currentRoute.startsWith('/employee-directory')) {
+      return 'Employee directory';
+    }
+
+    if (this.currentRoute.startsWith('/password-message-audit')) {
+      return 'Password SMS audit';
+    }
+
+    if (this.currentRoute.startsWith('/password-sms-templates')) {
+      return 'SMS template administration';
+    }
+
     if (this.currentRoute.startsWith('/change-password')) {
       return 'Password security';
     }
 
     if (this.currentRoute.startsWith('/telebirr-transfer')) {
       return 'Telebirr agent transfer';
+    }
+
+    if (this.currentRoute.startsWith('/resource-mobilization-approvals')) {
+      return 'Mobilization approval workspace';
+    }
+
+    if (this.currentRoute.startsWith('/resource-mobilization-report')) {
+      return this.currentUser?.role === 'SENIOR_MANAGEMENT' || this.currentUser?.role === 'BRANCH_BANKING'
+        ? 'System deposit campaign reporting'
+        : 'Resource mobilization reporting';
+    }
+
+    if (this.currentRoute.startsWith('/resource-mobilization')) {
+      return 'Resource mobilization workspace';
     }
 
     if (this.currentRoute.startsWith('/rental-payment')) {
@@ -127,12 +157,42 @@ export class AppComponent implements OnDestroy {
       return 'Manage users, branch assignment, roles, account status, and password resets.';
     }
 
+    if (this.currentRoute.startsWith('/password-management')) {
+      return 'Search employees and send credential SMS.';
+    }
+
+    if (this.currentRoute.startsWith('/employee-directory')) {
+      return 'Search, update, and maintain employee records.';
+    }
+
+    if (this.currentRoute.startsWith('/password-message-audit')) {
+      return 'Review password reset and new-user SMS activity.';
+    }
+
+    if (this.currentRoute.startsWith('/password-sms-templates')) {
+      return 'Maintain the SMS wording used for password reset and new user credential notifications.';
+    }
+
     if (this.currentRoute.startsWith('/change-password')) {
       return 'Change your password any time to keep your account secure.';
     }
 
     if (this.currentRoute.startsWith('/telebirr-transfer')) {
       return 'Verify the customer account, confirm the agent, and send the transfer for review.';
+    }
+
+    if (this.currentRoute.startsWith('/resource-mobilization-approvals')) {
+      return 'Review mobilization submissions from your branch and approve only the verified campaign entries.';
+    }
+
+    if (this.currentRoute.startsWith('/resource-mobilization-report')) {
+      return this.currentUser?.role === 'SENIOR_MANAGEMENT' || this.currentUser?.role === 'BRANCH_BANKING'
+        ? 'View the full system dashboard and detailed campaign register.'
+        : 'Track campaign activity and review the reporting register.';
+    }
+
+    if (this.currentRoute.startsWith('/resource-mobilization')) {
+      return 'Validate the transaction and submit the mobilization record.';
     }
 
     if (this.currentRoute.startsWith('/rental-payment')) {
@@ -158,7 +218,7 @@ export class AppComponent implements OnDestroy {
     }
 
     if (this.currentRoute.startsWith('/workspace')) {
-      return 'Choose the workstream you want to continue from this branch workspace.';
+      return 'Choose the workstream you want to open.';
     }
 
     return this.currentUser?.role === 'CHECKER'

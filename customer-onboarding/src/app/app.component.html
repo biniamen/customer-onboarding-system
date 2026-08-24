@@ -51,13 +51,20 @@
             <a routerLink="/checker-dashboard" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'CHECKER'">Onboarding Queue</a>
             <a routerLink="/rental-approvals" routerLinkActive="active" class="menu-item" *ngIf="rentalPaymentEnabled && currentUser?.role === 'RENTAL_CHECKER'">Rental Queue</a>
             <a routerLink="/telebirr-approvals" routerLinkActive="active" class="menu-item" *ngIf="telebirrEnabled && currentUser?.role === 'CHECKER'">Telebirr Queue</a>
+            <a routerLink="/resource-mobilization-approvals" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'CHECKER'">Mobilization Queue</a>
             <a routerLink="/onboarding-report" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'REPORT_VIEWER' || currentUser?.role === 'KYC_UNIT'">Onboarding Report</a>
+            <a routerLink="/resource-mobilization-report" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'SYSTEM_ADMIN' || currentUser?.role === 'SENIOR_MANAGEMENT' || currentUser?.role === 'BRANCH_BANKING' || currentUser?.role === 'REPORT_VIEWER' || currentUser?.role === 'MAKER' || currentUser?.role === 'CHECKER'">Mobilization Report</a>
             <a routerLink="/telebirr-report" routerLinkActive="active" class="menu-item" *ngIf="telebirrEnabled && (currentUser?.role === 'ADMIN' || currentUser?.role === 'MAKER' || currentUser?.role === 'CHECKER' || currentUser?.role === 'REPORT_VIEWER')">Telebirr Report</a>
             <a routerLink="/approved-accounts" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'MAKER' || currentUser?.role === 'CHECKER'">Approved Accounts</a>
             <a routerLink="/fan-verification" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'MAKER'">Onboarding</a>
+            <a routerLink="/resource-mobilization" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'MAKER'">Resource Mobilization</a>
             <a routerLink="/rental-payment" routerLinkActive="active" class="menu-item" *ngIf="rentalPaymentEnabled && currentUser?.role === 'RENTAL_MAKER'">Rental Payment</a>
             <a routerLink="/telebirr-transfer" routerLinkActive="active" class="menu-item" *ngIf="telebirrEnabled && currentUser?.role === 'MAKER'">Telebirr Transfer</a>
-            <a routerLink="/user-management" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN'">User Management</a>
+            <a routerLink="/user-management" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'SYSTEM_ADMIN'">User Management</a>
+            <a routerLink="/password-management" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'SYSTEM_ADMIN'">Password Management</a>
+            <a routerLink="/employee-directory" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'SYSTEM_ADMIN' || currentUser?.role === 'HR'">Employee Directory</a>
+            <a routerLink="/password-message-audit" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'SYSTEM_ADMIN'">SMS Audit</a>
+            <a routerLink="/password-sms-templates" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN'">SMS Templates</a>
             <a routerLink="/change-password" routerLinkActive="active" class="menu-item">Change Password</a>
           </div>
           <router-outlet></router-outlet>

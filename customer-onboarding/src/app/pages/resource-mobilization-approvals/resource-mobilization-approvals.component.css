@@ -1,0 +1,130 @@
+.mini-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(20, 83, 45, 0.08);
+  color: #166534;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.35rem 0.7rem;
+  white-space: nowrap;
+}
+
+.search-empty-state {
+  border: 1px dashed rgba(203, 213, 225, 0.95);
+  border-radius: 22px;
+  background: rgba(248, 250, 252, 0.72);
+  padding: 1.15rem 1.1rem;
+}
+
+.search-empty-title {
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.stat-card {
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(248,250,252,0.94));
+  padding: 1rem 1.1rem;
+}
+
+.stat-label {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  margin-top: 0.6rem;
+  color: #0f172a;
+  font-size: 1.12rem;
+  font-weight: 700;
+}
+
+.queue-list,
+.participant-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.queue-card,
+.participant-card {
+  width: 100%;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(248,250,252,0.94));
+  padding: 1rem 1.1rem;
+  text-align: left;
+  transition: 180ms ease;
+}
+
+.queue-card.active,
+.queue-card:hover {
+  border-color: rgba(234, 179, 8, 0.55);
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
+}
+
+.queue-card-header,
+.participant-card {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.queue-card-title,
+.participant-name {
+  color: #0f172a;
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
+.queue-card-copy,
+.queue-metric span,
+.participant-meta {
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.queue-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.queue-card-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 1rem;
+}
+
+.queue-metric strong,
+.participant-share {
+  display: block;
+  margin-top: 0.22rem;
+  color: #0f172a;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+@media (max-width: 860px) {
+  .queue-card-header,
+  .participant-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .queue-badges {
+    justify-content: flex-start;
+  }
+
+  .queue-card-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

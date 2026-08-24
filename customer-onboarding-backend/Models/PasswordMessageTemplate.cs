@@ -22,3 +22,26 @@ public static class PasswordMessageTemplateTypes
     NewUserCreation
   ];
 }
+
+public static class PasswordMessageSystems
+{
+  public const string FlexcubeCoreBanking = "Flexcube Core banking";
+  public const string CheckPointSystem = "Check Point System";
+  public const string Webmail = "Webmail";
+  public const string BiReport = "BI Report";
+
+  public static readonly string[] All =
+  [
+    FlexcubeCoreBanking,
+    CheckPointSystem,
+    Webmail,
+    BiReport
+  ];
+
+  public static bool TryNormalize(string? value, out string normalized)
+  {
+    var candidate = (value ?? string.Empty).Trim();
+    normalized = All.FirstOrDefault(item => string.Equals(item, candidate, StringComparison.OrdinalIgnoreCase)) ?? string.Empty;
+    return !string.IsNullOrWhiteSpace(normalized);
+  }
+}

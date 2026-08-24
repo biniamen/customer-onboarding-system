@@ -1,0 +1,239 @@
+<section class="space-y-6">
+  <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+    <div>
+      <p class="section-eyebrow">Resource mobilization checker queue</p>
+      <h1 class="section-title">Review branch deposit mobilization requests</h1>
+      <p class="section-copy">Approve or reject one request at a time. Joint requests are approved as a single batch.</p>
+    </div>
+
+    <button class="btn-secondary" type="button" (click)="refreshAll()">Refresh list</button>
+  </div>
+
+  <div *ngIf="pageError" class="alert-danger">{{ pageError }}</div>
+
+  <div class="grid gap-6 2xl:grid-cols-[minmax(0,0.95fr),minmax(0,1.05fr)]">
+    <div class="panel-card space-y-4">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex items-center gap-3">
+          <span class="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">{{ filteredPendingGroups.length }} pending</span>
+          <span class="text-sm text-slate-500" *ngIf="loading">Loading queue...</span>
+        </div>
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <input class="input-field lg:w-[360px]" [ngModel]="searchTerm" (ngModelChange)="updatePendingSearch($event)" placeholder="Search request, employee, customer, account, or transaction" />
+          <select class="input-field lg:w-[150px]" [ngModel]="pageSize" (ngModelChange)="updatePendingPageSize($event)">
+            <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size === -1 ? 'All / page' : (size + ' / page') }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="queue-list" *ngIf="pagedPendingGroups.length; else noPendingQueue">
+        <button
+          *ngFor="let group of pagedPendingGroups; trackBy: trackByGroup"
+          type="button"
+          class="queue-card"
+          [class.active]="selectedPendingGroup?.groupReference === group.groupReference"
+          (click)="selectPending(group)"
+        >
+          <div class="queue-card-header">
+            <div>
+              <p class="queue-card-title">{{ group.groupReference }}</p>
+              <p class="queue-card-copy">{{ group.primaryRecord.transactionReferenceNo }} | {{ group.primaryRecord.depositorCustomerName }}</p>
+            </div>
+            <div class="queue-badges">
+              <span class="mini-badge">{{ group.isJointRegistration ? ('Joint x' + group.jointParticipantCount) : 'Single' }}</span>
+              <span class="rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="statusClass(group.status)">{{ group.status }}</span>
+            </div>
+          </div>
+
+          <div class="queue-card-grid">
+            <div class="queue-metric"><span>Participants</span><strong>{{ group.employeeDisplayName }}</strong></div>
+            <div class="queue-metric"><span>Product</span><strong>{{ group.primaryRecord.depositProductType }}</strong></div>
+            <div class="queue-metric"><span>Total deposit</span><strong>{{ group.sourceTransactionAmount | number:'1.2-2' }} {{ group.primaryRecord.transactionCurrency }}</strong></div>
+            <div class="queue-metric"><span>Maker</span><strong>{{ group.primaryRecord.makerUserName || '-' }}</strong></div>
+          </div>
+        </button>
+      </div>
+
+      <ng-template #noPendingQueue>
+        <div class="search-empty-state">
+          <p class="search-empty-title">{{ loading ? 'Loading queue...' : 'No pending requests for your branch.' }}</p>
+        </div>
+      </ng-template>
+
+      <div class="flex items-center justify-between text-sm text-slate-500">
+        <span>Page {{ pageIndex + 1 }} of {{ totalPages }}</span>
+        <div class="flex gap-2">
+          <button class="btn-secondary btn-compact" type="button" (click)="previousPage()" [disabled]="pageIndex === 0 || pageSize === -1">Previous</button>
+          <button class="btn-secondary btn-compact" type="button" (click)="nextPage()" [disabled]="pageIndex >= totalPages - 1 || pageSize === -1">Next</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-5" *ngIf="selectedPendingGroup as group">
+      <div class="grid gap-4 md:grid-cols-4">
+        <div class="stat-card">
+          <p class="stat-label">Request ref</p>
+          <p class="stat-value">{{ group.groupReference }}</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Participants</p>
+          <p class="stat-value">{{ group.jointParticipantCount }}</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Depositor</p>
+          <p class="stat-value">{{ group.primaryRecord.depositorCustomerName }}</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Total deposit</p>
+          <p class="stat-value">{{ group.sourceTransactionAmount | number:'1.2-2' }} {{ group.primaryRecord.transactionCurrency }}</p>
+        </div>
+      </div>
+
+      <div class="grid gap-5 xl:grid-cols-2">
+        <div class="panel-card">
+          <p class="section-eyebrow">Deposit details</p>
+          <div class="mt-4 space-y-3 text-sm text-slate-600">
+            <div class="flex justify-between gap-4"><span>Transaction reference</span><span class="text-right font-semibold text-slate-900">{{ group.primaryRecord.transactionReferenceNo }}</span></div>
+            <div class="flex justify-between gap-4"><span>Account number</span><span class="text-right font-semibold text-slate-900">{{ group.primaryRecord.depositorAccountNumber }}</span></div>
+            <div class="flex justify-between gap-4"><span>Branch where deposit is made</span><span class="text-right font-semibold text-slate-900">{{ group.primaryRecord.depositBranchCode }}{{ group.primaryRecord.depositBranchName ? (' - ' + group.primaryRecord.depositBranchName) : '' }}</span></div>
+            <div class="flex justify-between gap-4"><span>Monthly target / budget</span><span class="text-right font-semibold text-slate-900">{{ group.primaryRecord.monthlyTargetAmount | number:'1.2-2' }}</span></div>
+            <div class="flex justify-between gap-4"><span>New accounts opened</span><span class="text-right font-semibold text-slate-900">{{ group.primaryRecord.newAccountCount }}</span></div>
+            <div class="flex justify-between gap-4"><span>Demand</span><span class="text-right font-semibold text-slate-900">{{ productMarker(group.primaryRecord, 'DEMAND') }}</span></div>
+            <div class="flex justify-between gap-4"><span>Saving</span><span class="text-right font-semibold text-slate-900">{{ productMarker(group.primaryRecord, 'SAVING') }}</span></div>
+            <div class="flex justify-between gap-4"><span>IFB</span><span class="text-right font-semibold text-slate-900">{{ productMarker(group.primaryRecord, 'IFB') }}</span></div>
+          </div>
+
+          <div class="participant-list mt-5">
+            <div class="participant-card" *ngFor="let record of group.records">
+              <div>
+                <p class="participant-name">{{ record.employeeFullName }}</p>
+                <p class="participant-meta">{{ record.employeeReference }}</p>
+                <p class="participant-meta">{{ record.employeeDepartmentName || '-' }}</p>
+              </div>
+              <div class="text-right">
+                <p class="participant-share">{{ record.totalDepositMobilized | number:'1.2-2' }} {{ record.transactionCurrency }}</p>
+                <p class="participant-meta">Share</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <p class="section-eyebrow">Checker action</p>
+          <div class="mt-4 space-y-4">
+            <div>
+              <label class="field-label">Approval note</label>
+              <textarea class="input-field min-h-[110px]" [(ngModel)]="checkerComment" placeholder="Optional note"></textarea>
+            </div>
+            <div>
+              <label class="field-label">Rejection reason</label>
+              <textarea class="input-field min-h-[110px]" [(ngModel)]="rejectionReason" placeholder="Required only for rejection"></textarea>
+            </div>
+            <div class="flex flex-wrap gap-3">
+              <button class="btn-primary" type="button" [disabled]="acting" (click)="approveSelected()">
+                {{ acting ? 'Saving...' : 'Approve request' }}
+              </button>
+              <button class="btn-secondary" type="button" [disabled]="acting" (click)="rejectSelected()">Reject request</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-card space-y-4">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex items-center gap-3">
+        <p class="section-eyebrow mb-0">Completed requests</p>
+        <span class="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">{{ filteredCompletedGroups.length }} items</span>
+        <span class="text-sm text-slate-500" *ngIf="loadingCompleted">Loading...</span>
+      </div>
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <input class="input-field lg:w-[420px]" [ngModel]="completedSearchTerm" (ngModelChange)="updateCompletedSearch($event)" placeholder="Search completed requests" />
+        <select class="input-field lg:w-[150px]" [ngModel]="completedPageSize" (ngModelChange)="updateCompletedPageSize($event)">
+          <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size === -1 ? 'All / page' : (size + ' / page') }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="overflow-hidden rounded-[22px] border border-slate-200">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-left text-sm">
+          <thead class="bg-slate-50 text-slate-500">
+            <tr>
+              <th class="px-4 py-3 font-semibold">Request</th>
+              <th class="px-4 py-3 font-semibold">Participants</th>
+              <th class="px-4 py-3 font-semibold">Depositor</th>
+              <th class="px-4 py-3 font-semibold">Total deposit</th>
+              <th class="px-4 py-3 font-semibold">Status</th>
+              <th class="px-4 py-3 font-semibold">Completed on</th>
+              <th class="px-4 py-3 font-semibold"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200 bg-white">
+            <tr *ngFor="let group of pagedCompletedGroups; trackBy: trackByGroup">
+              <td class="px-4 py-3">
+                <p class="font-semibold text-slate-900">{{ group.groupReference }}</p>
+                <p class="mt-1 text-xs text-slate-500">{{ group.primaryRecord.transactionReferenceNo }}</p>
+              </td>
+              <td class="px-4 py-3 text-slate-700">{{ group.employeeDisplayName }}</td>
+              <td class="px-4 py-3 text-slate-700">{{ group.primaryRecord.depositorCustomerName }}</td>
+              <td class="px-4 py-3 text-slate-700">{{ group.sourceTransactionAmount | number:'1.2-2' }} {{ group.primaryRecord.transactionCurrency }}</td>
+              <td class="px-4 py-3">
+                <span class="rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="statusClass(group.status)">{{ group.status }}</span>
+              </td>
+              <td class="px-4 py-3 text-slate-700">{{ (group.completedAt || group.primaryRecord.updatedAt) | date:'medium' }}</td>
+              <td class="px-4 py-3">
+                <button class="btn-secondary btn-compact" type="button" (click)="openCompleted(group)">View</button>
+              </td>
+            </tr>
+            <tr *ngIf="!pagedCompletedGroups.length">
+              <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-500">No completed requests found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+        <span>Page {{ completedPageIndex + 1 }} of {{ totalCompletedPages }}</span>
+        <div class="flex gap-2">
+          <button class="btn-secondary btn-compact" type="button" (click)="previousCompletedPage()" [disabled]="completedPageIndex === 0 || completedPageSize === -1">Previous</button>
+          <button class="btn-secondary btn-compact" type="button" (click)="nextCompletedPage()" [disabled]="completedPageIndex >= totalCompletedPages - 1 || completedPageSize === -1">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4" *ngIf="selectedCompletedGroup as group">
+    <div class="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-[30px] border border-white/80 bg-white p-6 shadow-2xl">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="section-eyebrow">Completed request details</p>
+          <h3 class="mt-2 text-2xl font-bold text-slate-900">{{ group.groupReference }}</h3>
+          <p class="mt-2 text-sm text-slate-500">Customer {{ group.primaryRecord.depositorCustomerName }} | Account {{ group.primaryRecord.depositorAccountNumber }}</p>
+        </div>
+        <button class="btn-secondary btn-compact" type="button" (click)="closeCompletedModal()">Close</button>
+      </div>
+
+      <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div class="metric-card"><p class="text-sm text-slate-500">Status</p><p class="mt-2 font-semibold text-slate-900">{{ group.status }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Participants</p><p class="mt-2 font-semibold text-slate-900">{{ group.jointParticipantCount }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Total deposit</p><p class="mt-2 font-semibold text-slate-900">{{ group.sourceTransactionAmount | number:'1.2-2' }} {{ group.primaryRecord.transactionCurrency }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Checker</p><p class="mt-2 font-semibold text-slate-900">{{ group.primaryRecord.checkerUserName || '-' }}</p></div>
+      </div>
+
+      <div class="participant-list mt-6">
+        <div class="participant-card" *ngFor="let record of group.records">
+          <div>
+            <p class="participant-name">{{ record.employeeFullName }}</p>
+            <p class="participant-meta">{{ record.employeeReference }}</p>
+            <p class="participant-meta">{{ record.employeeBranchCode || '-' }}{{ record.employeeBranchName ? (' - ' + record.employeeBranchName) : '' }}</p>
+          </div>
+          <div class="text-right">
+            <p class="participant-share">{{ record.totalDepositMobilized | number:'1.2-2' }} {{ record.transactionCurrency }}</p>
+            <p class="participant-meta">Share</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

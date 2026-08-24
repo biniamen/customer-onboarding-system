@@ -9,9 +9,10 @@ namespace CustomerOnboarding.Backend.Controllers;
 
 [ApiController]
 [Route("api/core/password-management")]
-[Authorize(Roles = UserRoles.Admin)]
+[Authorize(Roles = UserRoles.Admin + "," + UserRoles.SystemAdmin)]
 public class PasswordManagementController(
   IPasswordManagementService passwordManagementService,
+  IEmployeeDirectoryService employeeDirectoryService,
   IAuditService auditService
 ) : ControllerBase
 {
@@ -20,6 +21,60 @@ public class PasswordManagementController(
   {
     var users = await passwordManagementService.GetExternalUsersAsync(search, limit, cancellationToken);
     return Ok(users);
+  }
+
+  [HttpGet("employee-directory/stats")]
+  public async Task<ActionResult<EmployeeDirectoryStatsDto>> GetEmployeeDirectoryStats(CancellationToken cancellationToken)
+  {
+    var stats = await employeeDirectoryService.GetStatsAsync(cancellationToken);
+    return Ok(stats);
+  }
+
+  [HttpPost("employee-directory/import")]
+  [RequestFormLimits(MultipartBodyLengthLimit = 25_000_000)]
+  public async Task<ActionResult<EmployeeDirectoryImportResultDto>> ImportEmployeeDirectory([FromForm] IFormFile file, CancellationToken cancellationToken)
+  {
+    if (file is null || file.Length <= 0)
+    {
+      return BadRequest(new { message = "Please choose a valid Excel file to import." });
+    }
+
+    var extension = Path.GetExtension(file.FileName);
+    if (!string.Equals(extension, ".xlsx", StringComparison.OrdinalIgnoreCase))
+    {
+      return BadRequest(new { message = "Only .xlsx employee workbooks are supported." });
+    }
+
+    try
+    {
+      await using var stream = file.OpenReadStream();
+      var currentUserName = User.FindFirstValue(ClaimTypes.Name) ?? User.Identity?.Name ?? "system";
+      var result = await employeeDirectoryService.ImportAsync(stream, file.FileName, currentUserName, cancellationToken);
+
+      await auditService.LogAsync(
+        GetCurrentUserId(),
+        null,
+        "IMPORT_EMPLOYEE_DIRECTORY",
+        "EmployeeDirectoryEntry",
+        result.SourceFileName,
+        new
+        {
+          result.ProcessedRows,
+          result.InsertedRows,
+          result.UpdatedRows,
+          result.DeactivatedRows,
+          result.TotalActiveEmployees
+        },
+        HttpContext.Connection.RemoteIpAddress?.ToString(),
+        cancellationToken
+      );
+
+      return Ok(result);
+    }
+    catch (InvalidOperationException ex)
+    {
+      return BadRequest(new { message = ex.Message });
+    }
   }
 
   [HttpGet("templates")]
@@ -74,6 +129,11 @@ public class PasswordManagementController(
       return BadRequest(new { message = "Please select a user." });
     }
 
+    if (string.IsNullOrWhiteSpace(request.SystemName))
+    {
+      return BadRequest(new { message = "Please choose the target system." });
+    }
+
     if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Trim().Length < 8)
     {
       return BadRequest(new { message = "Password must be at least 8 characters." });
@@ -90,7 +150,7 @@ public class PasswordManagementController(
         "SEND_PASSWORD_RESET_SMS",
         "ExternalDirectoryUser",
         result.ExternalUserId,
-        new { result.FullEmployeeName, result.PhoneNumber, result.Sent },
+        new { result.FullEmployeeName, result.PhoneNumber, result.SystemName, result.Sent },
         HttpContext.Connection.RemoteIpAddress?.ToString(),
         cancellationToken
       );
@@ -111,6 +171,11 @@ public class PasswordManagementController(
     if (string.IsNullOrWhiteSpace(request.ExternalUserId))
     {
       return BadRequest(new { message = "Please select a user." });
+    }
+
+    if (string.IsNullOrWhiteSpace(request.SystemName))
+    {
+      return BadRequest(new { message = "Please choose the target system." });
     }
 
     if (string.IsNullOrWhiteSpace(request.Username) || request.Username.Trim().Length < 3)
@@ -134,7 +199,7 @@ public class PasswordManagementController(
         "SEND_NEW_USER_CREDENTIAL_SMS",
         "ExternalDirectoryUser",
         result.ExternalUserId,
-        new { result.FullEmployeeName, result.PhoneNumber, Username = request.Username, result.Sent },
+        new { result.FullEmployeeName, result.PhoneNumber, result.SystemName, Username = request.Username, result.Sent },
         HttpContext.Connection.RemoteIpAddress?.ToString(),
         cancellationToken
       );

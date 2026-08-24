@@ -2,22 +2,25 @@
   <div>
     <p class="section-eyebrow">Branch workspace</p>
     <h1 class="section-title">Choose the activity you want to continue</h1>
-    <p class="section-copy" *ngIf="!isReportViewer && !isKycUnit && !isRentalMaker && !isRentalChecker">
+    <p class="section-copy" *ngIf="!isReportViewer && !isSeniorManagement && !isBranchBanking && !isHr && !isKycUnit && !isRentalMaker && !isRentalChecker">
       {{
         telebirrEnabled && rentalPaymentEnabled
-          ? 'Open customer onboarding, rental payment, or Telebirr transfer from the same operator workspace.'
+          ? 'Open onboarding, resource mobilization, rental payment, or Telebirr transfer.'
           : rentalPaymentEnabled
-            ? 'Open customer onboarding or branch rental payment from the same operator workspace.'
+            ? 'Open onboarding, resource mobilization, or rental payment.'
             : telebirrEnabled
-              ? 'Open customer onboarding or prepare a Telebirr agent transfer from the same operator workspace.'
-              : 'Open customer onboarding from this operator workspace.'
+              ? 'Open onboarding, resource mobilization, or Telebirr transfer.'
+              : 'Open onboarding or resource mobilization.'
       }}
     </p>
-    <p class="section-copy" *ngIf="isRentalMaker">Prepare rental payment requests only. This access is limited to the rental module and does not expose onboarding or Telebirr features.</p>
-    <p class="section-copy" *ngIf="isRentalChecker">Review branch rental requests only and trigger CBS posting after checker approval.</p>
-    <p class="section-copy" *ngIf="isReportViewer">Access all-branch reports with search, filters, and detailed operational tracking.</p>
-    <p class="section-copy" *ngIf="isKycUnit">Review finished onboarding records, confirm KYC completion, and monitor branch onboarding output.</p>
-    <p class="section-copy" *ngIf="isAdmin">Manage users, role access, branch assignment, and password reset operations.</p>
+    <p class="section-copy" *ngIf="isRentalMaker">Prepare rental payment requests only.</p>
+    <p class="section-copy" *ngIf="isRentalChecker">Review branch rental requests only.</p>
+    <p class="section-copy" *ngIf="isReportViewer">Access your assigned report scope.</p>
+    <p class="section-copy" *ngIf="isSeniorManagement">View the full system-wide deposit campaign report.</p>
+    <p class="section-copy" *ngIf="isBranchBanking">View the full system-wide deposit campaign report.</p>
+    <p class="section-copy" *ngIf="isHr">Review and update employee records.</p>
+    <p class="section-copy" *ngIf="isKycUnit">Review finished onboarding records and confirm KYC completion.</p>
+    <p class="section-copy" *ngIf="isAdmin || isSystemAdmin">Manage users, password operations, audit, and employee records.</p>
   </div>
 
   <div class="grid gap-5 xl:grid-cols-2">
@@ -97,6 +100,21 @@
     </a>
 
     <a
+      *ngIf="isMaker"
+      routerLink="/resource-mobilization"
+      class="group rounded-[26px] border border-brand-100 bg-white/90 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-glow"
+    >
+      <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sm font-bold text-sky-700">RM</div>
+      <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-600">Resource mobilization</p>
+      <h2 class="mt-2 text-2xl font-bold text-slate-900">Register branch deposit campaign results</h2>
+      <p class="mt-3 text-sm leading-7 text-slate-600">Search the employee, pull the depositor transaction from CBS, and submit the mobilization record for checker approval.</p>
+      <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
+        Open resource mobilization
+        <span class="transition group-hover:translate-x-1">&rarr;</span>
+      </div>
+    </a>
+
+    <a
       *ngIf="isChecker"
       routerLink="/checker-dashboard"
       class="group rounded-[26px] border border-brand-100 bg-white/90 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-glow"
@@ -107,6 +125,21 @@
       <p class="mt-3 text-sm leading-7 text-slate-600">Check prepared customer files from your branch and approve ready account opening requests.</p>
       <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
         Open approvals
+        <span class="transition group-hover:translate-x-1">&rarr;</span>
+      </div>
+    </a>
+
+    <a
+      *ngIf="isChecker"
+      routerLink="/resource-mobilization-approvals"
+      class="group rounded-[26px] border border-brand-100 bg-white/90 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-glow"
+    >
+      <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sm font-bold text-sky-700">RA</div>
+      <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-600">Mobilization approvals</p>
+      <h2 class="mt-2 text-2xl font-bold text-slate-900">Validate deposit campaign submissions</h2>
+      <p class="mt-3 text-sm leading-7 text-slate-600">Review same-branch mobilization records, confirm the transaction details, and approve only valid campaign submissions.</p>
+      <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
+        Open approval queue
         <span class="transition group-hover:translate-x-1">&rarr;</span>
       </div>
     </a>
@@ -157,7 +190,37 @@
     </a>
 
     <a
-      *ngIf="isAdmin"
+      *ngIf="canAccessResourceMobilizationReport"
+      routerLink="/resource-mobilization-report"
+      class="group rounded-[26px] border border-brand-100 bg-white/90 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-glow"
+    >
+      <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-sm font-bold text-indigo-700">DR</div>
+      <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-600">Deposit campaign report</p>
+      <h2 class="mt-2 text-2xl font-bold text-slate-900">Track approved resource mobilization output</h2>
+      <p class="mt-3 text-sm leading-7 text-slate-600">Open the Excel-style mobilization report, monitor top performers, and review approved campaign registrations by branch.</p>
+      <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
+        Open deposit report
+        <span class="transition group-hover:translate-x-1">&rarr;</span>
+      </div>
+    </a>
+
+    <a
+      *ngIf="canManageEmployeeDirectory"
+      routerLink="/employee-directory"
+      class="group rounded-[26px] border border-brand-100 bg-white/90 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-glow"
+    >
+      <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-100 text-sm font-bold text-cyan-700">ED</div>
+      <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-600">Employee directory</p>
+      <h2 class="mt-2 text-2xl font-bold text-slate-900">Search and maintain employee records</h2>
+      <p class="mt-3 text-sm leading-7 text-slate-600">Open the searchable employee list, update staff details, and remove records when needed.</p>
+      <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
+        Open employee directory
+        <span class="transition group-hover:translate-x-1">&rarr;</span>
+      </div>
+    </a>
+
+    <a
+      *ngIf="canManageSecurity"
       routerLink="/user-management"
       class="group rounded-[26px] border border-brand-100 bg-white/90 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-glow"
     >
@@ -167,6 +230,51 @@
       <p class="mt-3 text-sm leading-7 text-slate-600">Create users, assign roles/branches, update user details, and perform secure password resets.</p>
       <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
         Open user management
+        <span class="transition group-hover:translate-x-1">&rarr;</span>
+      </div>
+    </a>
+
+    <a
+      *ngIf="canManageSecurity"
+      routerLink="/password-management"
+      class="group rounded-[26px] border border-brand-100 bg-white/90 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-glow"
+    >
+      <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-sm font-bold text-emerald-700">PM</div>
+      <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-600">Password messaging</p>
+      <h2 class="mt-2 text-2xl font-bold text-slate-900">Send credential SMS to users</h2>
+      <p class="mt-3 text-sm leading-7 text-slate-600">Search the external staff directory, review employee details, and send password reset or new-user credential messages.</p>
+      <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
+        Open password management
+        <span class="transition group-hover:translate-x-1">&rarr;</span>
+      </div>
+    </a>
+
+    <a
+      *ngIf="canManageSecurity"
+      routerLink="/password-message-audit"
+      class="group rounded-[26px] border border-brand-100 bg-white/90 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-glow"
+    >
+      <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-sm font-bold text-violet-700">AL</div>
+      <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-600">SMS audit</p>
+      <h2 class="mt-2 text-2xl font-bold text-slate-900">Review password message activity</h2>
+      <p class="mt-3 text-sm leading-7 text-slate-600">Track password reset and new-user credential SMS actions with operator and IP details.</p>
+      <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
+        Open SMS audit
+        <span class="transition group-hover:translate-x-1">&rarr;</span>
+      </div>
+    </a>
+
+    <a
+      *ngIf="isAdmin"
+      routerLink="/password-sms-templates"
+      class="group rounded-[26px] border border-brand-100 bg-white/90 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-glow"
+    >
+      <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-sm font-bold text-amber-700">ST</div>
+      <p class="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-accent-600">Template setup</p>
+      <h2 class="mt-2 text-2xl font-bold text-slate-900">Maintain password SMS templates</h2>
+      <p class="mt-3 text-sm leading-7 text-slate-600">Control the approved wording for reset-password and new-user credential messages from one admin screen.</p>
+      <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
+        Open template setup
         <span class="transition group-hover:translate-x-1">&rarr;</span>
       </div>
     </a>

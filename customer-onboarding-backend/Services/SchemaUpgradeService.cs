@@ -269,8 +269,8 @@ public class SchemaUpgradeService(AppDbContext dbContext) : ISchemaUpgradeServic
       """
       INSERT INTO "PasswordMessageTemplates" ("TemplateType", "Title", "Body", "IsActive", "UpdatedAtUtc", "UpdatedByUserName")
       VALUES
-        ('PASSWORD_RESET', 'Password reset SMS', 'Dear {{fullEmployeeName}}, Your Core Banking Password has been reset to {{password}}', TRUE, NOW(), 'system'),
-        ('NEW_USER_CREATION', 'New user credential SMS', 'Dear {{fullEmployeeName}}, Your New Core Banking Username is {{username}} and Your Password is {{password}}', TRUE, NOW(), 'system')
+        ('PASSWORD_RESET', 'Password reset SMS', 'Dear {{fullEmployeeName}}, Your {{systemName}} Password has been reset to {{password}}', TRUE, NOW(), 'system'),
+        ('NEW_USER_CREATION', 'New user credential SMS', 'Dear {{fullEmployeeName}}, Your New {{systemName}} Username is {{username}} and Your Password is {{password}}', TRUE, NOW(), 'system')
       ON CONFLICT ("TemplateType") DO NOTHING;
       """,
       cancellationToken
@@ -293,11 +293,626 @@ public class SchemaUpgradeService(AppDbContext dbContext) : ISchemaUpgradeServic
         ELSE 'Password SMS template'
       END),
           "Body" = COALESCE(NULLIF("Body", ''), CASE
-        WHEN "TemplateType" = 'PASSWORD_RESET' THEN 'Dear {{fullEmployeeName}}, Your Core Banking Password has been reset to {{password}}'
-        WHEN "TemplateType" = 'NEW_USER_CREATION' THEN 'Dear {{fullEmployeeName}}, Your New Core Banking Username is {{username}} and Your Password is {{password}}'
+        WHEN "TemplateType" = 'PASSWORD_RESET' THEN 'Dear {{fullEmployeeName}}, Your {{systemName}} Password has been reset to {{password}}'
+        WHEN "TemplateType" = 'NEW_USER_CREATION' THEN 'Dear {{fullEmployeeName}}, Your New {{systemName}} Username is {{username}} and Your Password is {{password}}'
         ELSE ''
       END)
       WHERE TRUE;
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      UPDATE "PasswordMessageTemplates"
+      SET "Body" = 'Dear {{fullEmployeeName}}, Your {{systemName}} Password has been reset to {{password}}',
+          "UpdatedAtUtc" = NOW(),
+          "UpdatedByUserName" = 'system'
+      WHERE "TemplateType" = 'PASSWORD_RESET'
+        AND "Body" = 'Dear {{fullEmployeeName}}, Your Core Banking Password has been reset to {{password}}';
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      UPDATE "PasswordMessageTemplates"
+      SET "Body" = 'Dear {{fullEmployeeName}}, Your New {{systemName}} Username is {{username}} and Your Password is {{password}}',
+          "UpdatedAtUtc" = NOW(),
+          "UpdatedByUserName" = 'system'
+      WHERE "TemplateType" = 'NEW_USER_CREATION'
+        AND "Body" = 'Dear {{fullEmployeeName}}, Your New Core Banking Username is {{username}} and Your Password is {{password}}';
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE TABLE IF NOT EXISTS "EmployeeDirectoryEntries" (
+        "Id" uuid PRIMARY KEY,
+        "SourceRowNumber" integer NOT NULL,
+        "SequenceNumber" integer NULL,
+        "FullName" character varying(220) NOT NULL,
+        "FirstName" character varying(80) NOT NULL DEFAULT '',
+        "MiddleName" character varying(120) NOT NULL DEFAULT '',
+        "LastName" character varying(80) NOT NULL DEFAULT '',
+        "EmployeeCode" character varying(32) NOT NULL DEFAULT '',
+        "InternalNumber" character varying(32) NOT NULL DEFAULT '',
+        "InternalNumberExtension" character varying(32) NOT NULL DEFAULT '',
+        "EmployeeReference" character varying(96) NOT NULL,
+        "Gender" character varying(16) NOT NULL DEFAULT '',
+        "ContactAddress" character varying(120) NOT NULL DEFAULT '',
+        "PhoneNumber" character varying(32) NOT NULL DEFAULT '',
+        "PhoneNumberNormalized" character varying(32) NOT NULL DEFAULT '',
+        "CurrentPosition" character varying(220) NOT NULL DEFAULT '',
+        "Classification" character varying(80) NOT NULL DEFAULT '',
+        "AssignedUnitName" character varying(220) NOT NULL DEFAULT '',
+        "BranchGrade" character varying(80) NOT NULL DEFAULT '',
+        "BranchCode" character varying(32) NOT NULL DEFAULT '',
+        "District" character varying(80) NOT NULL DEFAULT '',
+        "EmploymentDate" date NULL,
+        "IsActive" boolean NOT NULL DEFAULT TRUE,
+        "SourceFileName" character varying(260) NOT NULL DEFAULT '',
+        "SourceSheetName" character varying(100) NOT NULL DEFAULT '',
+        "ImportedAtUtc" timestamp with time zone NOT NULL DEFAULT NOW(),
+        "UpdatedAtUtc" timestamp with time zone NOT NULL DEFAULT NOW()
+      );
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE UNIQUE INDEX IF NOT EXISTS "IX_EmployeeDirectoryEntries_EmployeeReference"
+      ON "EmployeeDirectoryEntries" ("EmployeeReference");
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE INDEX IF NOT EXISTS "IX_EmployeeDirectoryEntries_FullName"
+      ON "EmployeeDirectoryEntries" ("FullName");
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE INDEX IF NOT EXISTS "IX_EmployeeDirectoryEntries_PhoneNumberNormalized"
+      ON "EmployeeDirectoryEntries" ("PhoneNumberNormalized");
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE INDEX IF NOT EXISTS "IX_EmployeeDirectoryEntries_BranchCode"
+      ON "EmployeeDirectoryEntries" ("BranchCode");
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE INDEX IF NOT EXISTS "IX_EmployeeDirectoryEntries_AssignedUnitName"
+      ON "EmployeeDirectoryEntries" ("AssignedUnitName");
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE TABLE IF NOT EXISTS "AuditLogs" (
+        "Id" bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+        "UserId" uuid NULL,
+        "OnboardingRecordId" uuid NULL,
+        "Action" character varying(80) NOT NULL,
+        "EntityName" character varying(80) NOT NULL,
+        "EntityId" character varying(80) NOT NULL,
+        "DetailsJson" text NULL,
+        "IpAddress" character varying(64) NULL,
+        "CreatedAtUtc" timestamp without time zone NOT NULL DEFAULT NOW()
+      );
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE TABLE IF NOT EXISTS "ResourceMobilizationRecords" (
+        "Id" integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+        "RegistrationReference" character varying(40) NOT NULL,
+        "RegistrationBatchReference" character varying(40) NOT NULL DEFAULT '',
+        "EmployeeDirectoryEntryId" uuid NULL,
+        "IsJointRegistration" boolean NOT NULL DEFAULT FALSE,
+        "JointParticipantCount" integer NOT NULL DEFAULT 1,
+        "JointSequenceNumber" integer NOT NULL DEFAULT 1,
+        "EmployeeReference" character varying(96) NOT NULL,
+        "EmployeeFullName" character varying(220) NOT NULL,
+        "EmployeePhoneNumber" character varying(32),
+        "EmployeeBranchCode" character varying(32),
+        "EmployeeBranchName" character varying(220),
+        "EmployeeDepartmentName" character varying(220),
+        "EmployeePositionName" character varying(220),
+        "EmployeeClassification" character varying(80),
+        "MonthlyTargetAmount" numeric(18,2) NOT NULL DEFAULT 0,
+        "DepositProductType" character varying(16) NOT NULL,
+        "SourceTransactionAmount" numeric(18,2) NOT NULL DEFAULT 0,
+        "TotalDepositMobilized" numeric(18,2) NOT NULL DEFAULT 0,
+        "NewAccountCount" integer NOT NULL DEFAULT 0,
+        "DepositorCustomerName" character varying(220) NOT NULL,
+        "DepositorCustomerNumber" character varying(40),
+        "DepositorAccountNumber" character varying(32) NOT NULL,
+        "DepositorAccountClass" character varying(32),
+        "TransactionReferenceNo" character varying(80) NOT NULL,
+        "DepositBranchCode" character varying(32) NOT NULL,
+        "DepositBranchName" character varying(220),
+        "TransactionCurrency" character varying(8) NOT NULL DEFAULT 'ETB',
+        "TransactionValueDate" timestamp with time zone NOT NULL,
+        "Status" character varying(40) NOT NULL DEFAULT 'PENDING_CHECKER_APPROVAL',
+        "MakerUserName" character varying(150),
+        "MakerBranchCode" character varying(32),
+        "MakerBranchName" character varying(120),
+        "CheckerUserName" character varying(150),
+        "CheckerBranchCode" character varying(32),
+        "CheckerBranchName" character varying(120),
+        "CheckerComment" character varying(300),
+        "RejectionReason" character varying(300),
+        "CreatedAt" timestamp with time zone NOT NULL DEFAULT NOW(),
+        "UpdatedAt" timestamp with time zone NOT NULL DEFAULT NOW(),
+        "ApprovedAt" timestamp with time zone,
+        "RejectedAt" timestamp with time zone,
+        "RequestPayload" text,
+        "ResponsePayload" text
+      );
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "RegistrationBatchReference" character varying(40) NOT NULL DEFAULT '';
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "EmployeeDirectoryEntryId" uuid NULL;
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "IsJointRegistration" boolean NOT NULL DEFAULT FALSE;
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "JointParticipantCount" integer NOT NULL DEFAULT 1;
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "JointSequenceNumber" integer NOT NULL DEFAULT 1;
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "EmployeeReference" character varying(96) NOT NULL DEFAULT '';
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "EmployeeFullName" character varying(220) NOT NULL DEFAULT '';
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "EmployeePhoneNumber" character varying(32);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "EmployeeBranchCode" character varying(32);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "EmployeeBranchName" character varying(220);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "EmployeeDepartmentName" character varying(220);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "EmployeePositionName" character varying(220);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "EmployeeClassification" character varying(80);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "MonthlyTargetAmount" numeric(18,2) NOT NULL DEFAULT 0;
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "DepositProductType" character varying(16) NOT NULL DEFAULT 'SAVING';
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "SourceTransactionAmount" numeric(18,2) NOT NULL DEFAULT 0;
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "TotalDepositMobilized" numeric(18,2) NOT NULL DEFAULT 0;
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "NewAccountCount" integer NOT NULL DEFAULT 0;
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "DepositorCustomerName" character varying(220) NOT NULL DEFAULT '';
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "DepositorCustomerNumber" character varying(40);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "DepositorAccountNumber" character varying(32) NOT NULL DEFAULT '';
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "DepositorAccountClass" character varying(32);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "TransactionReferenceNo" character varying(80) NOT NULL DEFAULT '';
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "DepositBranchCode" character varying(32) NOT NULL DEFAULT '';
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "DepositBranchName" character varying(220);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "TransactionCurrency" character varying(8) NOT NULL DEFAULT 'ETB';
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "TransactionValueDate" timestamp with time zone NOT NULL DEFAULT NOW();
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "Status" character varying(40) NOT NULL DEFAULT 'PENDING_CHECKER_APPROVAL';
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "MakerUserName" character varying(150);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "MakerBranchCode" character varying(32);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "MakerBranchName" character varying(120);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "CheckerUserName" character varying(150);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "CheckerBranchCode" character varying(32);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "CheckerBranchName" character varying(120);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "CheckerComment" character varying(300);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "RejectionReason" character varying(300);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "CreatedAt" timestamp with time zone NOT NULL DEFAULT NOW();
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "UpdatedAt" timestamp with time zone NOT NULL DEFAULT NOW();
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "ApprovedAt" timestamp with time zone;
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "RejectedAt" timestamp with time zone;
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "RequestPayload" text;
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      ALTER TABLE "ResourceMobilizationRecords"
+      ADD COLUMN IF NOT EXISTS "ResponsePayload" text;
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE TABLE IF NOT EXISTS "BsaSubmissionRecords" (
+        "Id" integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+        "SubmissionReference" character varying(40) NOT NULL,
+        "ReturnKey" character varying(80) NOT NULL,
+        "InstitutionCode" character varying(64) NOT NULL,
+        "FinancialYear" integer NOT NULL,
+        "PeriodStart" timestamp with time zone NOT NULL,
+        "PeriodEnd" timestamp with time zone NOT NULL,
+        "BsaFileName" character varying(160),
+        "SubmissionStatus" character varying(64) NOT NULL DEFAULT 'CREATED',
+        "Notification" character varying(500),
+        "LastProcessingStatus" character varying(120),
+        "CreatedByUserName" character varying(150),
+        "CreatedByBranchCode" character varying(32),
+        "CreatedAt" timestamp with time zone NOT NULL DEFAULT NOW(),
+        "UpdatedAt" timestamp with time zone NOT NULL DEFAULT NOW(),
+        "SubmittedAt" timestamp with time zone,
+        "LastStatusCheckedAt" timestamp with time zone,
+        "CompletedAt" timestamp with time zone,
+        "RequestPayload" text,
+        "SubmissionResponsePayload" text,
+        "StatusResponsePayload" text,
+        "DiscardRequestPayload" text,
+        "DiscardResponsePayload" text,
+        "ErrorMessage" text
+      );
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE UNIQUE INDEX IF NOT EXISTS "IX_BsaSubmissionRecords_SubmissionReference"
+      ON "BsaSubmissionRecords" ("SubmissionReference");
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE INDEX IF NOT EXISTS "IX_BsaSubmissionRecords_BsaFileName"
+      ON "BsaSubmissionRecords" ("BsaFileName");
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE INDEX IF NOT EXISTS "IX_BsaSubmissionRecords_SubmissionStatus_CreatedAt"
+      ON "BsaSubmissionRecords" ("SubmissionStatus", "CreatedAt" DESC);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      DROP INDEX IF EXISTS "IX_ResourceMobilizationRecords_TransactionReferenceNo";
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE UNIQUE INDEX IF NOT EXISTS "IX_ResourceMobilizationRecords_RegistrationReference"
+      ON "ResourceMobilizationRecords" ("RegistrationReference");
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE INDEX IF NOT EXISTS "IX_ResourceMobilizationRecords_RegistrationBatchReference"
+      ON "ResourceMobilizationRecords" ("RegistrationBatchReference");
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE INDEX IF NOT EXISTS "IX_ResourceMobilizationRecords_TransactionReferenceNo"
+      ON "ResourceMobilizationRecords" ("TransactionReferenceNo");
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE INDEX IF NOT EXISTS "IX_ResourceMobilizationRecords_Status_MakerBranchCode"
+      ON "ResourceMobilizationRecords" ("Status", "MakerBranchCode");
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE INDEX IF NOT EXISTS "IX_ResourceMobilizationRecords_TransactionValueDate"
+      ON "ResourceMobilizationRecords" ("TransactionValueDate" DESC);
+      """,
+      cancellationToken
+    );
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+      """
+      CREATE INDEX IF NOT EXISTS "IX_ResourceMobilizationRecords_EmployeeReference"
+      ON "ResourceMobilizationRecords" ("EmployeeReference");
       """,
       cancellationToken
     );

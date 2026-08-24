@@ -7,6 +7,10 @@ deploy/
 **/.angular/
 .npm-cache/
 
+# Local verification and IIS publish artifacts
+**/build-*/
+**/publish/
+
 # Local/temporary
 *.log
 *.zip
@@ -15,6 +19,9 @@ telebirr_docx_edit/
 tele_answer_check/
 uat_docx_clean/
 onboarding_uat_docx/
+deliverables/
+tmp/
+*.xlsx
 
 # Sensitive / large files
 customer_onboarding_prod.sql

@@ -1,0 +1,531 @@
+<section class="space-y-6">
+  <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+    <div class="max-w-3xl">
+      <p class="section-eyebrow">Resource mobilization</p>
+      <h1 class="section-title">Register deposit campaign requests</h1>
+      <p class="section-copy">Choose single or joint registration, confirm the CBS deposit, and send one clean request for checker approval.</p>
+    </div>
+
+    <div class="rounded-[22px] border border-brand-100 bg-brand-50/70 px-4 py-3 text-sm text-slate-600 shadow-sm xl:max-w-[360px]">
+      <p class="font-semibold text-slate-900">Rule</p>
+      <p class="mt-1 leading-6">One deposit reference can be registered once only. Joint registration splits one deposit equally across 2 or 3 employees.</p>
+    </div>
+  </div>
+
+  <div *ngIf="pageError" class="alert-danger">{{ pageError }}</div>
+
+  <div class="stats-grid">
+    <div class="metric-card">
+      <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Total requests</p>
+      <p class="mt-2 text-2xl font-bold text-slate-900">{{ totalRegistrations }}</p>
+    </div>
+    <div class="metric-card">
+      <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Pending checker</p>
+      <p class="mt-2 text-2xl font-bold text-brand-700">{{ pendingRegistrations }}</p>
+    </div>
+    <div class="metric-card">
+      <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Approved</p>
+      <p class="mt-2 text-2xl font-bold text-emerald-700">{{ approvedRegistrations }}</p>
+    </div>
+    <div class="metric-card">
+      <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Rejected</p>
+      <p class="mt-2 text-2xl font-bold text-rose-700">{{ rejectedRegistrations }}</p>
+    </div>
+  </div>
+
+  <div class="tab-shell">
+    <button
+      *ngFor="let tab of historyTabs"
+      type="button"
+      class="tab-button"
+      [class.active]="activeTab === tab.value"
+      (click)="setActiveTab(tab.value)"
+    >
+      {{ tab.label }}
+    </button>
+  </div>
+
+  <div *ngIf="activeTab === 'register'" class="register-layout">
+    <div class="space-y-6">
+      <div class="panel-card space-y-5">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="section-eyebrow">Step 1</p>
+            <h2 class="text-xl font-semibold text-slate-900">Choose request mode and mobilizers</h2>
+          </div>
+          <button class="btn-secondary btn-compact" type="button" (click)="clearEmployee()" *ngIf="selectedEmployeeCount">Clear</button>
+        </div>
+
+        <div class="mode-toggle-shell">
+          <button
+            *ngFor="let mode of registrationModes"
+            type="button"
+            class="mode-button"
+            [class.active]="registrationMode === mode.value"
+            (click)="setRegistrationMode(mode.value)"
+          >
+            <span class="mode-title">{{ mode.label }}</span>
+            <span class="mode-note">{{ mode.note }}</span>
+          </button>
+        </div>
+
+        <div class="search-shell">
+          <label class="field-label">Employee search</label>
+          <input
+            class="input-field"
+            [ngModel]="employeeSearchTerm"
+            (ngModelChange)="onEmployeeSearchChange($event)"
+            [placeholder]="isJointMode ? 'Search and add up to 3 employees' : 'Search by employee name, reference, branch, or phone'"
+          />
+          <div class="search-utility-row">
+            <p class="search-hint">
+              {{
+                isJointMode
+                  ? 'Select 2 or 3 active employees. Shared amount is split equally.'
+                  : 'Type at least 2 characters to search the internal employee directory.'
+              }}
+            </p>
+            <span class="mini-badge" *ngIf="employeeMatches.length">{{ employeeMatches.length }} matches</span>
+          </div>
+        </div>
+
+        <div class="selected-people-shell" *ngIf="selectedEmployeeCount">
+          <div class="selected-people-header">
+            <p class="field-label mb-0">Selected employees</p>
+            <span class="mini-badge">
+              {{ selectedEmployeeCount }}{{ isJointMode ? ' / 3 selected' : ' selected' }}
+            </span>
+          </div>
+
+          <div class="selected-people-grid">
+            <div class="selected-person-card" *ngFor="let employee of selectedEmployees; trackBy: trackByEmployee">
+              <div>
+                <p class="selected-person-name">{{ employee.fullName }}</p>
+                <p class="selected-person-meta">{{ employee.employeeReference }}</p>
+                <p class="selected-person-meta">{{ employee.branchCode || '-' }}{{ employee.branchName ? (' - ' + employee.branchName) : '' }}</p>
+              </div>
+              <button class="btn-secondary btn-compact" type="button" (click)="removeSelectedEmployee(employee.id)">Remove</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="search-results scroll-results" *ngIf="employeeMatches.length; else employeePrompt">
+          <button
+            *ngFor="let item of employeeMatches; trackBy: trackByEmployee"
+            type="button"
+            class="result-item"
+            [class.active]="isEmployeeSelected(item.id)"
+            (click)="selectEmployee(item)"
+          >
+            <div class="result-copy">
+              <p class="result-name">{{ item.fullName }}</p>
+              <p class="result-meta">{{ item.employeeReference }} | {{ item.positionName || 'Position not set' }}</p>
+              <p class="result-meta">{{ item.departmentName || 'Department not set' }}</p>
+              <p class="result-meta existing-profile" *ngIf="item.hasExistingRegistration">
+                Existing profile: {{ item.existingMonthlyTargetAmount || 0 | number:'1.2-2' }} target | {{ item.existingNewAccountCount || 0 }} accounts
+              </p>
+            </div>
+            <div class="result-side">
+              <p class="result-branch">{{ item.branchCode || '-' }}{{ item.branchName ? (' - ' + item.branchName) : '' }}</p>
+              <p class="result-status" [class.text-emerald-600]="item.isActive" [class.text-rose-600]="!item.isActive">{{ item.isActive ? 'Active' : 'Inactive' }}</p>
+            </div>
+          </button>
+        </div>
+
+        <ng-template #employeePrompt>
+          <div class="search-empty-state">
+            <p class="search-empty-title">
+              {{
+                loadingEmployees
+                  ? 'Searching employee directory...'
+                  : employeeSearchHasValue
+                    ? 'No employee matches found'
+                    : 'Search the employee directory'
+              }}
+            </p>
+            <p class="search-empty-copy">
+              {{
+                employeeSearchHasValue
+                  ? 'Try another employee name, branch, employee reference, or phone number.'
+                  : isJointMode
+                    ? 'Search and add 2 or 3 employees for one shared registration request.'
+                    : 'Select the employee who mobilized the deposit.'
+              }}
+            </p>
+          </div>
+        </ng-template>
+      </div>
+
+      <div class="panel-card space-y-5" [formGroup]="transactionSearchForm">
+        <div>
+          <p class="section-eyebrow">Step 2</p>
+          <h2 class="text-xl font-semibold text-slate-900">Find depositor transaction from CBS</h2>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="field-label">Transaction reference</label>
+            <input class="input-field" formControlName="transactionReferenceNo" placeholder="Example: 110FTRQ262230001" />
+          </div>
+          <div>
+            <label class="field-label">Depositor account number</label>
+            <input class="input-field" formControlName="accountNumber" placeholder="Enter account number" />
+          </div>
+          <div>
+            <label class="field-label">From date</label>
+            <input class="input-field" type="date" formControlName="fromDate" />
+          </div>
+          <div>
+            <label class="field-label">To date</label>
+            <input class="input-field" type="date" formControlName="toDate" />
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <button class="btn-secondary" type="button" [disabled]="loadingTransactions" (click)="searchTransactions()">
+            {{ loadingTransactions ? 'Searching...' : 'Search CBS deposit' }}
+          </button>
+        </div>
+
+        <div class="rounded-[20px] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800" *ngIf="existingRegistrationStatus as status">
+          <p class="font-semibold text-amber-900">Already registered</p>
+          <div class="mt-3 grid gap-2 md:grid-cols-2">
+            <p><strong>Status:</strong> {{ status.existingStatus || '-' }}</p>
+            <p><strong>Request ref:</strong> {{ status.existingRegistrationReference || '-' }}</p>
+            <p><strong>Employee:</strong> {{ status.existingEmployeeFullName || '-' }}</p>
+            <p><strong>Employee ref:</strong> {{ status.existingEmployeeReference || '-' }}</p>
+          </div>
+        </div>
+
+        <div class="transaction-list" *ngIf="transactionMatches.length">
+          <button
+            *ngFor="let item of transactionMatches"
+            type="button"
+            class="transaction-card"
+            [class.active]="selectedTransaction?.transactionReferenceNo === item.transactionReferenceNo"
+            (click)="selectTransaction(item)"
+          >
+            <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+              <div>
+                <p class="transaction-title">{{ item.customerName || 'Depositor name not returned' }}</p>
+                <p class="transaction-subtitle">{{ item.accountNumber }} | {{ item.transactionReferenceNo }}</p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <span class="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">{{ item.suggestedProductType }}</span>
+                <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700" *ngIf="item.alreadyRegistered">
+                  Registered - {{ item.existingStatus || 'In progress' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="mt-4 grid gap-3 md:grid-cols-4">
+              <div class="mini-detail"><span>Amount</span><strong>{{ item.amount | number:'1.2-2' }} {{ item.currency }}</strong></div>
+              <div class="mini-detail"><span>Value date</span><strong>{{ item.valueDate | date:'mediumDate' }}</strong></div>
+              <div class="mini-detail"><span>Branch</span><strong>{{ item.depositBranchCode }}{{ item.depositBranchName ? (' - ' + item.depositBranchName) : '' }}</strong></div>
+              <div class="mini-detail"><span>Account class</span><strong>{{ item.accountClass || '-' }}</strong></div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="panel-card space-y-5" [formGroup]="campaignForm">
+        <div>
+          <p class="section-eyebrow">Step 3</p>
+          <h2 class="text-xl font-semibold text-slate-900">Complete request details</h2>
+        </div>
+
+        <div class="existing-profile-banner" *ngIf="hasExistingEmployeeProfile">
+          <p class="existing-profile-title">Existing employee profile found</p>
+          <p class="existing-profile-copy">Saved target and new-account values will be reused for this employee.</p>
+        </div>
+
+        <div class="joint-note" *ngIf="isJointMode">
+          <p class="joint-note-title">Joint request</p>
+          <p class="joint-note-copy">One checker action will approve the whole batch and the deposit will be split equally across the selected employees.</p>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2" *ngIf="shouldCaptureEmployeeProfile; else existingEmployeeProfile">
+          <div>
+            <label class="field-label">Monthly target / budget</label>
+            <input class="input-field" type="number" formControlName="monthlyTargetAmount" placeholder="Enter target amount" />
+          </div>
+          <div>
+            <label class="field-label">Number of new accounts opened</label>
+            <input class="input-field" type="number" formControlName="newAccountCount" placeholder="Enter count" />
+          </div>
+        </div>
+
+        <ng-template #existingEmployeeProfile>
+          <div class="grid gap-4 md:grid-cols-2">
+            <div class="metric-card">
+              <p class="text-sm text-slate-500">Monthly target / budget</p>
+              <p class="mt-2 text-xl font-bold text-slate-900">{{ selectedMonthlyTargetAmount | number:'1.2-2' }}</p>
+            </div>
+            <div class="metric-card">
+              <p class="text-sm text-slate-500">Number of new accounts opened</p>
+              <p class="mt-2 text-xl font-bold text-slate-900">{{ selectedNewAccountCount }}</p>
+            </div>
+          </div>
+        </ng-template>
+
+        <div>
+          <label class="field-label">Deposit product type</label>
+          <div class="option-grid">
+            <button
+              *ngFor="let option of productTypes"
+              type="button"
+              class="option-card"
+              [class.active]="selectedProductType === option.value"
+              (click)="campaignForm.controls.depositProductType.setValue(option.value)"
+            >
+              <p class="option-title">{{ option.title }}</p>
+              <p class="option-copy">{{ option.description }}</p>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="field-label">Customer name who made the deposit</label>
+          <input
+            class="input-field"
+            formControlName="depositorCustomerName"
+            [placeholder]="selectedTransaction ? 'Fetched from CBS transaction' : 'Select a CBS transaction first'"
+            readonly
+          />
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <button class="btn-primary" type="button" [disabled]="submitting" (click)="submit()">
+            {{ submitting ? 'Submitting...' : 'Submit for checker approval' }}
+          </button>
+          <button class="btn-secondary" type="button" (click)="setActiveTab('history')">Open my registrations</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-6 summary-rail">
+      <div class="panel-card">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="section-eyebrow">Request summary</p>
+            <p class="mt-1 text-sm text-slate-500">Live request snapshot.</p>
+          </div>
+          <span class="mini-badge" *ngIf="selectedTransaction">{{ selectedTransaction.currency || 'ETB' }}</span>
+        </div>
+
+        <div class="mt-4 summary-grid text-sm text-slate-600">
+          <div class="summary-row"><span>Mode</span><strong>{{ isJointMode ? 'Joint' : 'Single' }}</strong></div>
+          <div class="summary-row"><span>Participants</span><strong>{{ selectedEmployeeCount || 0 }}</strong></div>
+          <div class="summary-row"><span>Employees</span><strong>{{ selectedEmployeeNamesDisplay }}</strong></div>
+          <div class="summary-row"><span>Depositor</span><strong>{{ selectedTransaction?.customerName || 'Select transaction first' }}</strong></div>
+          <div class="summary-row"><span>Transaction</span><strong>{{ selectedTransaction?.transactionReferenceNo || '-' }}</strong></div>
+          <div class="summary-row"><span>Deposit branch</span><strong>{{ selectedTransaction?.depositBranchCode || '-' }}{{ selectedTransaction?.depositBranchName ? (' - ' + selectedTransaction?.depositBranchName) : '' }}</strong></div>
+          <div class="summary-row"><span>Total deposit</span><strong>{{ selectedTransactionAmount | number:'1.2-2' }} {{ selectedTransaction?.currency || 'ETB' }}</strong></div>
+          <div class="summary-row"><span>Share / employee</span><strong>{{ splitAmountPreview | number:'1.2-2' }} {{ selectedTransaction?.currency || 'ETB' }}</strong></div>
+          <div class="summary-row"><span>Suggested product</span><strong>{{ selectedTransaction?.suggestedProductType || selectedProductType }}</strong></div>
+          <div class="summary-row"><span>Monthly target</span><strong>{{ selectedMonthlyTargetAmount | number:'1.2-2' }}</strong></div>
+          <div class="summary-row"><span>New accounts opened</span><strong>{{ selectedNewAccountCount }}</strong></div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="section-eyebrow">Latest requests</p>
+            <p class="mt-1 text-sm text-slate-500">Most recent submissions.</p>
+          </div>
+          <button class="btn-secondary btn-compact" type="button" (click)="setActiveTab('history')">View all</button>
+        </div>
+
+        <div class="activity-list" *ngIf="latestRecordsPreview.length; else noRecentActivity">
+          <button
+            *ngFor="let group of latestRecordsPreview; trackBy: trackByGroup"
+            type="button"
+            class="activity-item"
+            (click)="openRecord(group)"
+          >
+            <div>
+              <div class="activity-badges">
+                <span class="mini-badge">{{ group.isJointRegistration ? ('Joint x' + group.jointParticipantCount) : 'Single' }}</span>
+                <span class="mini-badge">{{ group.groupReference }}</span>
+              </div>
+              <p class="activity-title">{{ group.primaryRecord.depositorCustomerName }}</p>
+              <p class="activity-copy">{{ group.primaryRecord.transactionReferenceNo }} | {{ group.employeeDisplayName }}</p>
+            </div>
+            <div class="text-right">
+              <span class="rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="statusClass(group.status)">{{ group.status }}</span>
+              <p class="mt-2 text-xs text-slate-500">{{ group.primaryRecord.createdAt | date:'mediumDate' }}</p>
+            </div>
+          </button>
+        </div>
+
+        <ng-template #noRecentActivity>
+          <div class="search-empty-state">
+            <p class="search-empty-title">No requests yet</p>
+            <p class="search-empty-copy">Submitted requests will appear here.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="activeTab === 'history'" class="space-y-6">
+    <div class="panel-card space-y-5">
+      <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div>
+          <p class="section-eyebrow">My registrations</p>
+          <h2 class="mt-2 text-2xl font-bold text-slate-900">Pending, approved, and rejected requests</h2>
+          <p class="mt-2 text-sm leading-7 text-slate-500">Search your requests, review batch status, and export the filtered result.</p>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button class="btn-secondary btn-compact" type="button" (click)="setActiveTab('register')">Back to registration</button>
+          <button class="btn-secondary btn-compact" type="button" (click)="exportHistory()" [disabled]="!filteredRecordGroups.length">Export Excel</button>
+        </div>
+      </div>
+
+      <div class="history-toolbar">
+        <input
+          class="input-field history-search"
+          [ngModel]="searchTerm"
+          (ngModelChange)="updateSearch($event)"
+          placeholder="Search by request, employee, customer, account, transaction, product, branch, or status"
+        />
+        <select class="input-field history-page-size" [ngModel]="pageSize" (ngModelChange)="updatePageSize($event)">
+          <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size === -1 ? 'All / page' : (size + ' / page') }}</option>
+        </select>
+      </div>
+
+      <div class="history-summary-strip">
+        <span class="history-chip">Showing {{ pageStartRecord }} - {{ pageEndRecord }} of {{ totalFilteredRecords }}</span>
+        <span class="history-chip">Pending {{ pendingRegistrations }}</span>
+        <span class="history-chip">Approved {{ approvedRegistrations }}</span>
+        <span class="history-chip">Rejected {{ rejectedRegistrations }}</span>
+      </div>
+
+      <div class="history-table-shell">
+        <div class="overflow-x-auto">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Request Ref</th>
+                <th>Mode</th>
+                <th>Participants</th>
+                <th>Depositor</th>
+                <th>Transaction Ref</th>
+                <th>Product</th>
+                <th>Total Deposit</th>
+                <th>Branch</th>
+                <th>Status</th>
+                <th>Submitted</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let group of pagedRecordGroups; trackBy: trackByGroup">
+                <td>
+                  <p class="table-title">{{ group.groupReference }}</p>
+                  <p class="table-copy">{{ group.primaryRecord.depositorAccountNumber }}</p>
+                </td>
+                <td>
+                  <p class="table-title">{{ group.isJointRegistration ? 'Joint' : 'Single' }}</p>
+                  <p class="table-copy">Participants {{ group.jointParticipantCount }}</p>
+                </td>
+                <td>
+                  <p class="table-title">{{ group.employeeDisplayName }}</p>
+                  <p class="table-copy">{{ group.participantReferences.join(', ') }}</p>
+                </td>
+                <td>
+                  <p class="table-title">{{ group.primaryRecord.depositorCustomerName }}</p>
+                  <p class="table-copy">{{ group.primaryRecord.depositorCustomerNumber || 'Customer number not returned' }}</p>
+                </td>
+                <td>{{ group.primaryRecord.transactionReferenceNo }}</td>
+                <td>{{ group.primaryRecord.depositProductType }}</td>
+                <td class="font-semibold text-slate-900">{{ group.sourceTransactionAmount | number:'1.2-2' }} {{ group.primaryRecord.transactionCurrency }}</td>
+                <td>{{ group.primaryRecord.depositBranchCode }}{{ group.primaryRecord.depositBranchName ? (' - ' + group.primaryRecord.depositBranchName) : '' }}</td>
+                <td>
+                  <span class="rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="statusClass(group.status)">{{ group.status }}</span>
+                </td>
+                <td>{{ group.primaryRecord.createdAt | date:'medium' }}</td>
+                <td>
+                  <button class="btn-secondary btn-compact" type="button" (click)="openRecord(group)">View</button>
+                </td>
+              </tr>
+              <tr *ngIf="!pagedRecordGroups.length">
+                <td colspan="11" class="px-4 py-12 text-center text-sm text-slate-500">
+                  {{ loadingHistory ? 'Loading requests...' : 'No resource mobilization requests found for the current filter.' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="history-pager">
+        <div class="text-sm text-slate-500">Page {{ pageIndex + 1 }} of {{ totalPages }}</div>
+        <div class="flex gap-2">
+          <button class="btn-secondary btn-compact" type="button" (click)="previousPage()" [disabled]="pageIndex === 0 || pageSize === -1">Previous</button>
+          <button class="btn-secondary btn-compact" type="button" (click)="nextPage()" [disabled]="pageIndex >= totalPages - 1 || pageSize === -1">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4" *ngIf="selectedRecordGroup as group">
+    <div class="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-[30px] border border-white/80 bg-white p-6 shadow-2xl">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="section-eyebrow">Request details</p>
+          <h3 class="mt-2 text-2xl font-bold text-slate-900">{{ group.groupReference }}</h3>
+          <p class="mt-2 text-sm text-slate-500">Customer {{ group.primaryRecord.depositorCustomerName }} | Transaction {{ group.primaryRecord.transactionReferenceNo }}</p>
+        </div>
+        <button class="btn-secondary btn-compact" type="button" (click)="closeRecordModal()">Close</button>
+      </div>
+
+      <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div class="metric-card"><p class="text-sm text-slate-500">Mode</p><p class="mt-2 font-semibold text-slate-900">{{ group.isJointRegistration ? 'Joint' : 'Single' }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Participants</p><p class="mt-2 font-semibold text-slate-900">{{ group.jointParticipantCount }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Total deposit</p><p class="mt-2 font-semibold text-slate-900">{{ group.sourceTransactionAmount | number:'1.2-2' }} {{ group.primaryRecord.transactionCurrency }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Status</p><p class="mt-2 font-semibold text-slate-900">{{ group.status }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Depositor</p><p class="mt-2 font-semibold text-slate-900">{{ group.primaryRecord.depositorCustomerName }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Account number</p><p class="mt-2 font-semibold text-slate-900">{{ group.primaryRecord.depositorAccountNumber }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Product</p><p class="mt-2 font-semibold text-slate-900">{{ group.primaryRecord.depositProductType }}</p></div>
+        <div class="metric-card"><p class="text-sm text-slate-500">Deposit branch</p><p class="mt-2 font-semibold text-slate-900">{{ group.primaryRecord.depositBranchCode }}{{ group.primaryRecord.depositBranchName ? (' - ' + group.primaryRecord.depositBranchName) : '' }}</p></div>
+      </div>
+
+      <div class="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr),minmax(0,1fr)]">
+        <div class="panel-card">
+          <p class="section-eyebrow">Participants</p>
+          <div class="participant-list mt-4">
+            <div class="participant-card" *ngFor="let record of group.records">
+              <div>
+                <p class="participant-name">{{ record.employeeFullName }}</p>
+                <p class="participant-meta">{{ record.employeeReference }}</p>
+                <p class="participant-meta">{{ record.employeeBranchCode || '-' }}{{ record.employeeBranchName ? (' - ' + record.employeeBranchName) : '' }}</p>
+              </div>
+              <div class="text-right">
+                <p class="participant-share">{{ record.totalDepositMobilized | number:'1.2-2' }} {{ record.transactionCurrency }}</p>
+                <p class="participant-meta">Share</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <p class="section-eyebrow">Request values</p>
+          <div class="mt-4 space-y-3 text-sm text-slate-600">
+            <div class="flex justify-between gap-4"><span>Transaction reference</span><span class="text-right font-semibold text-slate-900">{{ group.primaryRecord.transactionReferenceNo }}</span></div>
+            <div class="flex justify-between gap-4"><span>Value date</span><span class="text-right font-semibold text-slate-900">{{ group.primaryRecord.transactionValueDate | date:'mediumDate' }}</span></div>
+            <div class="flex justify-between gap-4"><span>Monthly target / budget</span><span class="text-right font-semibold text-slate-900">{{ group.primaryRecord.monthlyTargetAmount | number:'1.2-2' }}</span></div>
+            <div class="flex justify-between gap-4"><span>New accounts opened</span><span class="text-right font-semibold text-slate-900">{{ group.primaryRecord.newAccountCount }}</span></div>
+            <div class="flex justify-between gap-4"><span>Demand</span><span class="text-right font-semibold text-slate-900">{{ productMarker(group.primaryRecord, 'DEMAND') }}</span></div>
+            <div class="flex justify-between gap-4"><span>Saving</span><span class="text-right font-semibold text-slate-900">{{ productMarker(group.primaryRecord, 'SAVING') }}</span></div>
+            <div class="flex justify-between gap-4"><span>IFB</span><span class="text-right font-semibold text-slate-900">{{ productMarker(group.primaryRecord, 'IFB') }}</span></div>
+            <div class="flex justify-between gap-4"><span>Maker</span><span class="text-right font-semibold text-slate-900">{{ group.primaryRecord.makerUserName || '-' }}</span></div>
+            <div class="flex justify-between gap-4"><span>Checker</span><span class="text-right font-semibold text-slate-900">{{ group.primaryRecord.checkerUserName || '-' }}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
