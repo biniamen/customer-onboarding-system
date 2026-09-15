@@ -335,9 +335,15 @@ public class ResourceMobilizationController(
   public async Task<ActionResult<IReadOnlyList<ResourceMobilizationRecordDto>>> Mine(CancellationToken cancellationToken)
   {
     var currentUser = await GetCurrentUserAsync(cancellationToken);
-    var items = await dbContext.ResourceMobilizationRecords
-      .AsNoTracking()
-      .Where(x => x.MakerUserName == currentUser.Username)
+    var hasAllBranchAccess = await HasAllBranchAccessAsync(currentUser, cancellationToken);
+    var query = dbContext.ResourceMobilizationRecords.AsNoTracking();
+
+    if (!hasAllBranchAccess)
+    {
+      query = query.Where(x => x.MakerUserName == currentUser.Username);
+    }
+
+    var items = await query
       .OrderByDescending(x => x.CreatedAt)
       .ToListAsync(cancellationToken);
 
