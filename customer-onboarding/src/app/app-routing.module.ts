@@ -26,6 +26,7 @@ import { UserManagementComponent } from './pages/user-management/user-management
 import { WatchlistManagementComponent } from './pages/watchlist-management/watchlist-management.component';
 import { KycAuthorizationComponent } from './pages/kyc-authorization/kyc-authorization.component';
 import { BranchManagementComponent } from './pages/branch-management/branch-management.component';
+import { PermissionManagementComponent } from './pages/permission-management/permission-management.component';
 import { WorkspaceHomeComponent } from './pages/workspace-home/workspace-home.component';
 import { environment } from 'src/environments/environment';
 
@@ -56,6 +57,7 @@ const routes: Routes = [
   { path: 'approved-accounts', component: ApprovedAccountsComponent, canActivate: [AuthGuard], data: { roles: ['MAKER', 'CHECKER'] } },
   { path: 'user-management', component: UserManagementComponent, canActivate: [AuthGuard], data: { roles: ['ADMIN', 'SYSTEM_ADMIN'] } },
   { path: 'branch-management', component: BranchManagementComponent, canActivate: [AuthGuard], data: { roles: ['ADMIN', 'SYSTEM_ADMIN'] } },
+  { path: 'permission-management', component: PermissionManagementComponent, canActivate: [AuthGuard], data: { roles: ['ADMIN', 'SYSTEM_ADMIN'] } },
   { path: 'password-management', component: PasswordManagementComponent, canActivate: [AuthGuard], data: { roles: ['ADMIN', 'SYSTEM_ADMIN'] } },
   { path: 'employee-directory', component: EmployeeDirectoryManagementComponent, canActivate: [AuthGuard], data: { roles: ['ADMIN', 'SYSTEM_ADMIN', 'HR'] } },
   { path: 'watchlist', component: WatchlistManagementComponent, canActivate: [AuthGuard], data: { roles: ['ADMIN', 'SYSTEM_ADMIN', 'KYC_UNIT'] } },

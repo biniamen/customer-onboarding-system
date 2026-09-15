@@ -1,0 +1,15 @@
+:host { display: block; }
+
+.metric-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #64748b; }
+.metric-value { margin-top: 0.45rem; font-size: 2rem; font-weight: 800; line-height: 1; color: #0f172a; }
+.permission-table-shell { overflow-x: auto; }
+.permission-table { border-collapse: separate; border-spacing: 0; width: 100%; }
+.permission-table th { border-bottom: 1px solid #e2e8f0; background: #f8fafc; padding: 0.9rem 1.15rem; text-align: left; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #64748b; }
+.permission-table td { border-bottom: 1px solid #e2e8f0; padding: 1rem 1.15rem; vertical-align: middle; }
+.permission-table tbody tr:last-child td { border-bottom: 0; }
+.permission-table tbody tr:hover td { background: #f8fdf9; }
+.permission-code { border-radius: 0.45rem; background: #edf7f0; padding: 0.28rem 0.45rem; font-size: 0.75rem; font-weight: 700; color: #166534; }
+.permission-assignment { display: flex; align-items: flex-start; gap: 0.85rem; border: 1px solid #dbe4ed; border-radius: 1rem; padding: 0.9rem 1rem; cursor: pointer; transition: border-color 160ms ease, background-color 160ms ease; }
+.permission-assignment:hover { border-color: #85b998; background: #f8fdf9; }
+.permission-assignment input { margin-top: 0.25rem; height: 1rem; width: 1rem; accent-color: #13713d; }
+.permission-assignment-disabled { cursor: not-allowed; opacity: 0.62; background: #f8fafc; }

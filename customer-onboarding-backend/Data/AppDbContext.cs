@@ -16,6 +16,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   public DbSet<PasswordManagedSystem> PasswordManagedSystems => Set<PasswordManagedSystem>();
   public DbSet<EmployeeDirectoryEntry> EmployeeDirectoryEntries => Set<EmployeeDirectoryEntry>();
   public DbSet<WatchlistEntry> WatchlistEntries => Set<WatchlistEntry>();
+  public DbSet<SystemPermission> SystemPermissions => Set<SystemPermission>();
+  public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
   public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -230,6 +232,25 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
       entity.Property(x => x.NormalizedName).HasMaxLength(120);
       entity.Property(x => x.CreatedByUserName).HasMaxLength(150);
       entity.Property(x => x.UpdatedByUserName).HasMaxLength(150);
+    });
+
+    modelBuilder.Entity<SystemPermission>(entity =>
+    {
+      entity.HasIndex(x => x.Code).IsUnique();
+      entity.Property(x => x.Code).HasMaxLength(64);
+      entity.Property(x => x.Name).HasMaxLength(160);
+      entity.Property(x => x.Description).HasMaxLength(500);
+    });
+
+    modelBuilder.Entity<RolePermission>(entity =>
+    {
+      entity.HasIndex(x => new { x.Role, x.PermissionId }).IsUnique();
+      entity.Property(x => x.Role).HasMaxLength(24);
+      entity.Property(x => x.AssignedByUserName).HasMaxLength(150);
+      entity.HasOne(x => x.Permission)
+        .WithMany(x => x.RoleAssignments)
+        .HasForeignKey(x => x.PermissionId)
+        .OnDelete(DeleteBehavior.Cascade);
     });
 
     modelBuilder.Entity<EmployeeDirectoryEntry>(entity =>

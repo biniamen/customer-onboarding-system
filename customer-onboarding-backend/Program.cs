@@ -33,6 +33,7 @@ builder.Services.AddScoped<IEmployeeDirectoryService, EmployeeDirectoryService>(
 builder.Services.AddScoped<IResourceMobilizationService, ResourceMobilizationService>();
 builder.Services.AddScoped<IWatchlistService, WatchlistService>();
 builder.Services.AddScoped<IOnboardingScreeningService, OnboardingScreeningService>();
+builder.Services.AddScoped<IRolePermissionService, RolePermissionService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient<IAccountApprovalService, AccountApprovalService>();
 builder.Services.AddHttpClient<IOnboardingFulfillmentService, OnboardingFulfillmentService>();

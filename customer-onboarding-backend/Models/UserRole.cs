@@ -13,4 +13,19 @@ public static class UserRoles
   public const string RentalChecker = "RENTAL_CHECKER";
   public const string ReportViewer = "REPORT_VIEWER";
   public const string KycUnit = "KYC_UNIT";
+
+  public static readonly IReadOnlyList<string> All =
+  [
+    Admin,
+    SystemAdmin,
+    SeniorManagement,
+    BranchBanking,
+    Hr,
+    Maker,
+    Checker,
+    RentalMaker,
+    RentalChecker,
+    ReportViewer,
+    KycUnit
+  ];
 }

@@ -278,6 +278,44 @@ export interface ResetUserPasswordRequest {
   forcePasswordChange: boolean;
 }
 
+export interface SystemPermission {
+  id: number;
+  code: string;
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  assignedRoles: UserRole[];
+}
+
+export interface RolePermissionAssignment {
+  role: UserRole;
+  permissionCodes: string[];
+}
+
+export interface PermissionManagementSnapshot {
+  permissions: SystemPermission[];
+  roleAssignments: RolePermissionAssignment[];
+}
+
+export interface CreateSystemPermissionRequest {
+  code: string;
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+}
+
+export interface UpdateSystemPermissionRequest {
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+}
+
+export interface UpdateRolePermissionsRequest {
+  permissionCodes: string[];
+}
+
 export interface ExternalDirectoryUser {
   id: string;
   employeeId: string;

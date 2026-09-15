@@ -77,6 +77,10 @@ export class AppComponent implements OnDestroy {
   }
 
   get shellTitle(): string {
+    if (this.currentRoute.startsWith('/permission-management')) {
+      return 'Role permissions';
+    }
+
     if (this.currentRoute.startsWith('/user-management')) {
       return 'User administration';
     }
@@ -161,6 +165,10 @@ export class AppComponent implements OnDestroy {
   }
 
   get shellCopy(): string {
+    if (this.currentRoute.startsWith('/permission-management')) {
+      return 'Control feature access by assigning permissions to application roles.';
+    }
+
     if (this.currentRoute.startsWith('/user-management')) {
       return 'Manage users, branch assignment, roles, account status, and password resets.';
     }

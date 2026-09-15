@@ -36,6 +36,7 @@ import { WorkspaceHomeComponent } from './pages/workspace-home/workspace-home.co
 import { WatchlistManagementComponent } from './pages/watchlist-management/watchlist-management.component';
 import { KycAuthorizationComponent } from './pages/kyc-authorization/kyc-authorization.component';
 import { BranchManagementComponent } from './pages/branch-management/branch-management.component';
+import { PermissionManagementComponent } from './pages/permission-management/permission-management.component';
 
 @NgModule({
   declarations: [
@@ -61,6 +62,7 @@ import { BranchManagementComponent } from './pages/branch-management/branch-mana
     TelebirrReportComponent,
     UserManagementComponent,
     BranchManagementComponent,
+    PermissionManagementComponent,
     WatchlistManagementComponent,
     KycAuthorizationComponent,
     WorkspaceHomeComponent,

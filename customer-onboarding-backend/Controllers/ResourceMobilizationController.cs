@@ -17,6 +17,7 @@ namespace CustomerOnboarding.Backend.Controllers;
 public class ResourceMobilizationController(
   AppDbContext dbContext,
   IResourceMobilizationService resourceMobilizationService,
+  IRolePermissionService rolePermissionService,
   IAuditService auditService,
   ILogger<ResourceMobilizationController> logger
 ) : ControllerBase
@@ -42,6 +43,8 @@ public class ResourceMobilizationController(
   {
     try
     {
+      var currentUser = await GetCurrentUserAsync(cancellationToken);
+      var hasAllBranchAccess = await HasAllBranchAccessAsync(currentUser, cancellationToken);
       var transactionReferenceNo = (request.TransactionReferenceNo ?? string.Empty).Trim();
       var accountNumber = (request.AccountNumber ?? string.Empty).Trim();
 
@@ -89,6 +92,13 @@ public class ResourceMobilizationController(
       }
 
       var results = await resourceMobilizationService.SearchTransactionsAsync(request, cancellationToken);
+      if (!hasAllBranchAccess)
+      {
+        results = results
+          .Where(item => string.Equals(item.DepositBranchCode, currentUser.BranchCode, StringComparison.OrdinalIgnoreCase))
+          .ToList();
+      }
+
       return Ok(results);
     }
     catch (Exception ex)
@@ -111,6 +121,7 @@ public class ResourceMobilizationController(
     try
     {
       var currentUser = await GetCurrentUserAsync(cancellationToken);
+      var hasAllBranchAccess = await HasAllBranchAccessAsync(currentUser, cancellationToken);
       var selectedEmployeeIds = (request.EmployeeDirectoryEntryIds ?? Array.Empty<string>())
         .Select(x => (x ?? string.Empty).Trim())
         .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -190,6 +201,11 @@ public class ResourceMobilizationController(
       if (transaction is null)
       {
         return BadRequest(new { message = "Re-select the CBS transaction and try again." });
+      }
+
+      if (!hasAllBranchAccess && !string.Equals(transaction.DepositBranchCode, currentUser.BranchCode, StringComparison.OrdinalIgnoreCase))
+      {
+        return BadRequest(new { message = "You can register only deposit transactions from your assigned branch." });
       }
 
       var customerName = !string.IsNullOrWhiteSpace(transaction.CustomerName)
@@ -333,11 +349,17 @@ public class ResourceMobilizationController(
   public async Task<ActionResult<IReadOnlyList<ResourceMobilizationRecordDto>>> Pending(CancellationToken cancellationToken)
   {
     var currentUser = await GetCurrentUserAsync(cancellationToken);
-    var items = await dbContext.ResourceMobilizationRecords
+    var hasAllBranchAccess = await HasAllBranchAccessAsync(currentUser, cancellationToken);
+    var query = dbContext.ResourceMobilizationRecords
       .AsNoTracking()
-      .Where(x =>
-        x.Status == ResourceMobilizationStatuses.PendingCheckerApproval &&
-        x.MakerBranchCode == currentUser.BranchCode)
+      .Where(x => x.Status == ResourceMobilizationStatuses.PendingCheckerApproval);
+
+    if (!hasAllBranchAccess)
+    {
+      query = query.Where(x => x.MakerBranchCode == currentUser.BranchCode);
+    }
+
+    var items = await query
       .OrderByDescending(x => x.CreatedAt)
       .ToListAsync(cancellationToken);
 
@@ -349,11 +371,12 @@ public class ResourceMobilizationController(
   public async Task<ActionResult<IReadOnlyList<ResourceMobilizationRecordDto>>> Completed(CancellationToken cancellationToken)
   {
     var currentUser = await GetCurrentUserAsync(cancellationToken);
+    var hasAllBranchAccess = await HasAllBranchAccessAsync(currentUser, cancellationToken);
     var query = dbContext.ResourceMobilizationRecords
       .AsNoTracking()
       .Where(x => x.Status != ResourceMobilizationStatuses.PendingCheckerApproval);
 
-    if (!HasGlobalReportAccess(currentUser))
+    if (!hasAllBranchAccess)
     {
       query = query.Where(x => x.MakerBranchCode == currentUser.BranchCode);
     }
@@ -372,9 +395,10 @@ public class ResourceMobilizationController(
     CancellationToken cancellationToken)
   {
     var currentUser = await GetCurrentUserAsync(cancellationToken);
+    var hasAllBranchAccess = await HasAllBranchAccessAsync(currentUser, cancellationToken);
     var query = dbContext.ResourceMobilizationRecords.AsNoTracking();
 
-    if (!HasGlobalReportAccess(currentUser))
+    if (!hasAllBranchAccess)
     {
       query = query.Where(x => x.MakerBranchCode == currentUser.BranchCode);
     }
@@ -472,9 +496,10 @@ public class ResourceMobilizationController(
   public async Task<ActionResult<ResourceMobilizationDashboardStatsDto>> DashboardStats(CancellationToken cancellationToken)
   {
     var currentUser = await GetCurrentUserAsync(cancellationToken);
+    var hasAllBranchAccess = await HasAllBranchAccessAsync(currentUser, cancellationToken);
     var query = dbContext.ResourceMobilizationRecords.AsNoTracking();
 
-    if (!HasGlobalReportAccess(currentUser))
+    if (!hasAllBranchAccess)
     {
       query = query.Where(x => x.MakerBranchCode == currentUser.BranchCode);
     }
@@ -485,8 +510,8 @@ public class ResourceMobilizationController(
     var monthRange = ResolveCurrentMonthRangeUtc();
 
     return Ok(new ResourceMobilizationDashboardStatsDto(
-      HasGlobalReportAccess(currentUser) ? "ALL_BRANCHES" : "BRANCH_ONLY",
-      HasGlobalReportAccess(currentUser) ? null : currentUser.BranchCode,
+      hasAllBranchAccess ? "ALL_BRANCHES" : "BRANCH_ONLY",
+      hasAllBranchAccess ? null : currentUser.BranchCode,
       BuildPeriod(todayRange.StartUtc, todayRange.EndUtc, records),
       BuildPeriod(weekRange.StartUtc, weekRange.EndUtc, records),
       BuildPeriod(monthRange.StartUtc, monthRange.EndUtc, records)
@@ -498,13 +523,14 @@ public class ResourceMobilizationController(
   public async Task<ActionResult<ResourceMobilizationRecordDto>> Get(int id, CancellationToken cancellationToken)
   {
     var currentUser = await GetCurrentUserAsync(cancellationToken);
+    var hasAllBranchAccess = await HasAllBranchAccessAsync(currentUser, cancellationToken);
     var record = await dbContext.ResourceMobilizationRecords.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     if (record is null)
     {
       return NotFound(new { message = "Resource mobilization record was not found." });
     }
 
-    if (!CanAccessRecord(currentUser, record))
+    if (!CanAccessRecord(currentUser, record, hasAllBranchAccess))
     {
       return Forbid();
     }
@@ -517,13 +543,14 @@ public class ResourceMobilizationController(
   public async Task<ActionResult<ResourceMobilizationRecordDto>> Approve(int id, [FromBody] ApproveResourceMobilizationRequest request, CancellationToken cancellationToken)
   {
     var currentUser = await GetCurrentUserAsync(cancellationToken);
+    var hasAllBranchAccess = await HasAllBranchAccessAsync(currentUser, cancellationToken);
     var record = await dbContext.ResourceMobilizationRecords.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     if (record is null)
     {
       return NotFound(new { message = "Resource mobilization record was not found." });
     }
 
-    if (!CanCheckerAccess(currentUser, record))
+    if (!CanCheckerAccess(currentUser, record, hasAllBranchAccess))
     {
       return Forbid();
     }
@@ -589,13 +616,14 @@ public class ResourceMobilizationController(
   public async Task<ActionResult<ResourceMobilizationRecordDto>> Reject(int id, [FromBody] RejectResourceMobilizationRequest request, CancellationToken cancellationToken)
   {
     var currentUser = await GetCurrentUserAsync(cancellationToken);
+    var hasAllBranchAccess = await HasAllBranchAccessAsync(currentUser, cancellationToken);
     var record = await dbContext.ResourceMobilizationRecords.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     if (record is null)
     {
       return NotFound(new { message = "Resource mobilization record was not found." });
     }
 
-    if (!CanCheckerAccess(currentUser, record))
+    if (!CanCheckerAccess(currentUser, record, hasAllBranchAccess))
     {
       return Forbid();
     }
@@ -720,23 +748,33 @@ public class ResourceMobilizationController(
     return Guid.TryParse(rawUserId, out var userId) ? userId : null;
   }
 
-  private static bool HasGlobalReportAccess(AppUser user)
+  private async Task<bool> HasAllBranchAccessAsync(AppUser user, CancellationToken cancellationToken)
+  {
+    if (HasBuiltInGlobalReportAccess(user))
+    {
+      return true;
+    }
+
+    return await rolePermissionService.HasPermissionAsync(user.Role, PermissionCodes.AllBranchAccess, cancellationToken);
+  }
+
+  private static bool HasBuiltInGlobalReportAccess(AppUser user)
   {
     return string.Equals(user.Role, UserRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
            string.Equals(user.Role, UserRoles.SystemAdmin, StringComparison.OrdinalIgnoreCase) ||
            string.Equals(user.Role, UserRoles.SeniorManagement, StringComparison.OrdinalIgnoreCase) ||
-           string.Equals(user.Role, UserRoles.BranchBanking, StringComparison.OrdinalIgnoreCase) ||
-           IsHeadOfficeBranch(user.BranchCode);
+           string.Equals(user.Role, UserRoles.BranchBanking, StringComparison.OrdinalIgnoreCase);
   }
 
-  private static bool CanCheckerAccess(AppUser user, ResourceMobilizationRecord record)
+  private static bool CanCheckerAccess(AppUser user, ResourceMobilizationRecord record, bool hasAllBranchAccess)
   {
-    return string.Equals(record.MakerBranchCode, user.BranchCode, StringComparison.OrdinalIgnoreCase);
+    return hasAllBranchAccess ||
+           string.Equals(record.MakerBranchCode, user.BranchCode, StringComparison.OrdinalIgnoreCase);
   }
 
-  private static bool CanAccessRecord(AppUser user, ResourceMobilizationRecord record)
+  private static bool CanAccessRecord(AppUser user, ResourceMobilizationRecord record, bool hasAllBranchAccess)
   {
-    if (HasGlobalReportAccess(user))
+    if (hasAllBranchAccess)
     {
       return true;
     }
@@ -748,7 +786,7 @@ public class ResourceMobilizationController(
 
     if (string.Equals(user.Role, UserRoles.Checker, StringComparison.OrdinalIgnoreCase))
     {
-      return CanCheckerAccess(user, record);
+      return CanCheckerAccess(user, record, hasAllBranchAccess);
     }
 
     return false;
@@ -965,13 +1003,6 @@ public class ResourceMobilizationController(
       .Where(x => !string.IsNullOrWhiteSpace(x))
       .Distinct(StringComparer.OrdinalIgnoreCase)
       .Count();
-  }
-
-  private static bool IsHeadOfficeBranch(string? branchCode)
-  {
-    var normalized = (branchCode ?? string.Empty).Trim();
-    return string.Equals(normalized, "000", StringComparison.OrdinalIgnoreCase) ||
-           string.Equals(normalized, "001", StringComparison.OrdinalIgnoreCase);
   }
 
   private static IReadOnlyList<decimal> SplitAmountEvenly(decimal amount, int participantCount)

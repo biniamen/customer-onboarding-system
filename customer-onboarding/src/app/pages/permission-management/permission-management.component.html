@@ -1,0 +1,84 @@
+<section class="space-y-6">
+  <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+    <div class="max-w-3xl">
+      <p class="section-eyebrow">Access control</p>
+      <h1 class="section-title">Role permissions</h1>
+      <p class="section-copy">Create controlled permissions and attach them to application roles without changing the users already assigned to those roles.</p>
+    </div>
+    <div class="flex gap-3">
+      <button type="button" class="btn-secondary" (click)="loadConfiguration()" [disabled]="loading">Refresh</button>
+      <button type="button" class="btn-primary" (click)="openCreate()">Add permission</button>
+    </div>
+  </div>
+
+  <div *ngIf="pageError" class="alert-danger" role="alert"><strong>Action required:</strong> {{ pageError }}</div>
+
+  <div class="grid gap-4 sm:grid-cols-3">
+    <div class="metric-card"><p class="metric-label">Configured permissions</p><p class="metric-value">{{ permissions.length }}</p></div>
+    <div class="metric-card"><p class="metric-label">Active permissions</p><p class="metric-value text-emerald-700">{{ activePermissionCount }}</p></div>
+    <div class="metric-card"><p class="metric-label">Assigned to {{ selectedRoleLabel }}</p><p class="metric-value text-amber-700">{{ assignedCount }}</p></div>
+  </div>
+
+  <div class="grid gap-6 2xl:grid-cols-[1.08fr,0.92fr]">
+    <article class="panel-card overflow-hidden p-0">
+      <div class="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div><p class="section-eyebrow mb-1">Permission catalog</p><p class="text-sm text-slate-500">Inactive permissions remain visible for audit history but cannot be assigned.</p></div>
+        <span class="mini-badge">{{ permissions.length }} total</span>
+      </div>
+      <div class="permission-table-shell">
+        <table class="permission-table min-w-[780px]">
+          <thead><tr><th>Permission</th><th>Code</th><th>Assigned roles</th><th>Status</th><th class="text-right">Action</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let permission of permissions">
+              <td><p class="font-semibold text-slate-900">{{ permission.name }}</p><p class="mt-1 max-w-[280px] text-xs leading-5 text-slate-500">{{ permission.description || 'No description provided.' }}</p></td>
+              <td><code class="permission-code">{{ permission.code }}</code></td>
+              <td><span class="text-sm font-medium text-slate-700">{{ formatRoles(permission.assignedRoles) }}</span></td>
+              <td><span class="status-chip" [class.status-chip-active]="permission.isActive" [class.status-chip-inactive]="!permission.isActive">{{ permission.isActive ? 'Active' : 'Inactive' }}</span></td>
+              <td class="text-right"><button type="button" class="btn-secondary btn-compact" (click)="openEdit(permission)">Manage</button></td>
+            </tr>
+            <tr *ngIf="loading"><td colspan="5" class="py-12 text-center text-sm text-slate-500">Loading permission configuration...</td></tr>
+            <tr *ngIf="!loading && !permissions.length"><td colspan="5" class="py-12 text-center text-sm text-slate-500">No permissions have been configured yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="panel-card">
+      <div class="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
+        <div><p class="section-eyebrow mb-1">Role assignment</p><h2 class="text-xl font-bold text-slate-900">Permissions for {{ selectedRoleLabel }}</h2></div>
+        <select class="select-field min-w-[210px]" [ngModel]="selectedRole" (ngModelChange)="selectRole($event)">
+          <option *ngFor="let role of roles" [ngValue]="role">{{ formatRole(role) }}</option>
+        </select>
+      </div>
+
+      <div class="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
+        <strong>All Branch Access:</strong> assign <code>ALL_BRANCH_ACCESS</code> to a maker or checker to allow resource-mobilization work across all branches. Without it, the role remains restricted to its assigned branch.
+      </div>
+
+      <div class="mt-5 space-y-3">
+        <label *ngFor="let permission of permissions" class="permission-assignment" [class.permission-assignment-disabled]="!permission.isActive">
+          <input type="checkbox" [checked]="isAssigned(permission)" [disabled]="!permission.isActive || savingAssignments" (change)="toggleAssignment(permission, $any($event.target).checked)" />
+          <span class="min-w-0 flex-1"><span class="block font-semibold text-slate-900">{{ permission.name }}</span><span class="mt-1 block text-xs leading-5 text-slate-500"><code>{{ permission.code }}</code>{{ permission.description ? (' | ' + permission.description) : '' }}</span></span>
+          <span *ngIf="!permission.isActive" class="text-xs font-semibold uppercase tracking-wide text-slate-400">Inactive</span>
+        </label>
+        <p *ngIf="!permissions.length && !loading" class="rounded-2xl bg-slate-50 px-4 py-5 text-sm text-slate-500">Create a permission before assigning it to a role.</p>
+      </div>
+
+      <div class="mt-6 flex items-center justify-between border-t border-slate-200 pt-5"><p class="text-sm text-slate-500">{{ assignedCount }} selected</p><button type="button" class="btn-primary" (click)="saveAssignments()" [disabled]="savingAssignments || loading">{{ savingAssignments ? 'Saving...' : 'Save role permissions' }}</button></div>
+    </article>
+  </div>
+</section>
+
+<div *ngIf="editorOpen" class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 p-4" (click)="closeEditor()">
+  <form class="w-full max-w-2xl overflow-hidden rounded-[28px] bg-white shadow-2xl" [formGroup]="form" (ngSubmit)="savePermission()" (click)="$event.stopPropagation()" novalidate>
+    <div class="flex items-start justify-between border-b border-slate-200 px-6 py-5"><div><p class="section-eyebrow">Permission configuration</p><h2 class="mt-1 text-2xl font-bold text-slate-900">{{ selectedPermission ? 'Manage permission' : 'Create permission' }}</h2></div><button type="button" class="btn-secondary btn-compact" (click)="closeEditor()">Close</button></div>
+    <div class="space-y-5 px-6 py-6">
+      <div><label class="field-label" for="permissionCode">Permission code <span class="text-rose-600">*</span></label><input id="permissionCode" class="input-field font-mono uppercase" [class.input-invalid]="form.controls.code.touched && form.controls.code.invalid" formControlName="code" maxlength="64" placeholder="ALL_BRANCH_ACCESS" /><p *ngIf="form.controls.code.touched && form.controls.code.invalid" class="field-error">Use 3-64 uppercase letters, numbers, or underscores.</p><p *ngIf="selectedPermission" class="mt-2 text-xs text-slate-500">The code is permanent so existing authorization rules remain stable.</p></div>
+      <div><label class="field-label" for="permissionName">Display name <span class="text-rose-600">*</span></label><input id="permissionName" class="input-field" [class.input-invalid]="form.controls.name.touched && form.controls.name.invalid" formControlName="name" maxlength="160" placeholder="All Branch Access" /><p *ngIf="form.controls.name.touched && form.controls.name.invalid" class="field-error">Enter a name between 3 and 160 characters.</p></div>
+      <div><label class="field-label" for="permissionDescription">Description</label><textarea id="permissionDescription" class="input-field min-h-[90px]" formControlName="description" maxlength="500" placeholder="Explain what this permission authorizes."></textarea></div>
+      <label class="control-toggle"><input type="checkbox" formControlName="isActive" /> Active and available for role assignment</label>
+      <div *ngIf="selectedPermission?.assignedRoles?.length" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"><strong>Currently assigned:</strong> {{ formatRoles(selectedPermission?.assignedRoles || []) }}</div>
+    </div>
+    <div class="flex flex-col-reverse gap-3 border-t border-slate-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between"><button *ngIf="selectedPermission" type="button" class="btn-secondary text-rose-700" [disabled]="savingPermission || deleting" (click)="deletePermission()">{{ deleting ? 'Deleting...' : 'Delete permission' }}</button><span *ngIf="!selectedPermission"></span><button type="submit" class="btn-primary" [disabled]="savingPermission || deleting">{{ savingPermission ? 'Saving...' : (selectedPermission ? 'Save changes' : 'Create permission') }}</button></div>
+  </form>
+</div>

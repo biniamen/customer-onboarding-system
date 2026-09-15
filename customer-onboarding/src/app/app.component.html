@@ -62,6 +62,7 @@
             <a routerLink="/telebirr-transfer" routerLinkActive="active" class="menu-item" *ngIf="telebirrEnabled && currentUser?.role === 'MAKER'">Telebirr Transfer</a>
             <a routerLink="/user-management" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'SYSTEM_ADMIN'">User Management</a>
             <a routerLink="/branch-management" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'SYSTEM_ADMIN'">Branch Management</a>
+            <a routerLink="/permission-management" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'SYSTEM_ADMIN'">Role Permissions</a>
             <a routerLink="/password-management" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'SYSTEM_ADMIN'">Password Management</a>
             <a routerLink="/employee-directory" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'SYSTEM_ADMIN' || currentUser?.role === 'HR'">Employee Directory</a>
             <a routerLink="/watchlist" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'SYSTEM_ADMIN' || currentUser?.role === 'KYC_UNIT'">Watchlist</a>
