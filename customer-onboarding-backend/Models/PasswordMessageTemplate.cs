@@ -23,25 +23,14 @@ public static class PasswordMessageTemplateTypes
   ];
 }
 
-public static class PasswordMessageSystems
+public class PasswordManagedSystem
 {
-  public const string FlexcubeCoreBanking = "Flexcube Core banking";
-  public const string CheckPointSystem = "Check Point System";
-  public const string Webmail = "Webmail";
-  public const string BiReport = "BI Report";
-
-  public static readonly string[] All =
-  [
-    FlexcubeCoreBanking,
-    CheckPointSystem,
-    Webmail,
-    BiReport
-  ];
-
-  public static bool TryNormalize(string? value, out string normalized)
-  {
-    var candidate = (value ?? string.Empty).Trim();
-    normalized = All.FirstOrDefault(item => string.Equals(item, candidate, StringComparison.OrdinalIgnoreCase)) ?? string.Empty;
-    return !string.IsNullOrWhiteSpace(normalized);
-  }
+  public int Id { get; set; }
+  public string Name { get; set; } = string.Empty;
+  public string NormalizedName { get; set; } = string.Empty;
+  public bool IsActive { get; set; } = true;
+  public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+  public string CreatedByUserName { get; set; } = string.Empty;
+  public DateTimeOffset UpdatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+  public string UpdatedByUserName { get; set; } = string.Empty;
 }

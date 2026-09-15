@@ -5,6 +5,25 @@ public record BranchDto(
   string BranchName
 );
 
+public record ManagedBranchDto(
+  string BranchCode,
+  string BranchName,
+  bool IsActive,
+  int AssignedUserCount,
+  int ActiveUserCount,
+  int OnboardingRecordCount
+);
+
+public record CreateBranchRequest(
+  string BranchCode,
+  string BranchName
+);
+
+public record UpdateBranchRequest(
+  string BranchName,
+  bool IsActive
+);
+
 public record AdminUserListItemDto(
   Guid Id,
   string Username,

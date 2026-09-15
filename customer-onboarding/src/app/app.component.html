@@ -48,7 +48,7 @@
           </div>
           <div class="menu-bar mb-4" *ngIf="showOperationsNav">
             <a routerLink="/workspace" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="menu-item">Home</a>
-            <a routerLink="/checker-dashboard" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'CHECKER'">Onboarding Queue</a>
+            <a routerLink="/kyc-authorization" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'KYC_UNIT'">KYC Authorization</a>
             <a routerLink="/rental-approvals" routerLinkActive="active" class="menu-item" *ngIf="rentalPaymentEnabled && currentUser?.role === 'RENTAL_CHECKER'">Rental Queue</a>
             <a routerLink="/telebirr-approvals" routerLinkActive="active" class="menu-item" *ngIf="telebirrEnabled && currentUser?.role === 'CHECKER'">Telebirr Queue</a>
             <a routerLink="/resource-mobilization-approvals" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'CHECKER'">Mobilization Queue</a>
@@ -61,8 +61,10 @@
             <a routerLink="/rental-payment" routerLinkActive="active" class="menu-item" *ngIf="rentalPaymentEnabled && currentUser?.role === 'RENTAL_MAKER'">Rental Payment</a>
             <a routerLink="/telebirr-transfer" routerLinkActive="active" class="menu-item" *ngIf="telebirrEnabled && currentUser?.role === 'MAKER'">Telebirr Transfer</a>
             <a routerLink="/user-management" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'SYSTEM_ADMIN'">User Management</a>
+            <a routerLink="/branch-management" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'SYSTEM_ADMIN'">Branch Management</a>
             <a routerLink="/password-management" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'SYSTEM_ADMIN'">Password Management</a>
             <a routerLink="/employee-directory" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'SYSTEM_ADMIN' || currentUser?.role === 'HR'">Employee Directory</a>
+            <a routerLink="/watchlist" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'SYSTEM_ADMIN' || currentUser?.role === 'KYC_UNIT'">Watchlist</a>
             <a routerLink="/password-message-audit" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN' || currentUser?.role === 'SYSTEM_ADMIN'">SMS Audit</a>
             <a routerLink="/password-sms-templates" routerLinkActive="active" class="menu-item" *ngIf="currentUser?.role === 'ADMIN'">SMS Templates</a>
             <a routerLink="/change-password" routerLinkActive="active" class="menu-item">Change Password</a>

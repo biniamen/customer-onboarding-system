@@ -20,7 +20,7 @@ import { VerifiedProfileExportService } from 'src/app/services/verified-profile-
 })
 export class ApprovedAccountsComponent implements OnInit {
   readonly pageSizeOptions = [10, 20, 50, 100, -1];
-  readonly statusOptions = ['ALL', 'PENDING_CHECKER_APPROVAL', 'ACCOUNT_CREATED', 'KYC_REVIEWED', 'FAILED', 'REJECTED'];
+  readonly statusOptions = ['ALL', 'PENDING_KYC_AUTHORIZATION', 'KYC_PROCESSING', 'KYC_APPROVED', 'KYC_REJECTED', 'FULFILLMENT_FAILED', 'DUPLICATE_CIF_BLOCKED', 'PENDING_CHECKER_APPROVAL', 'ACCOUNT_CREATED', 'KYC_REVIEWED', 'FAILED', 'REJECTED'];
 
   records: ApprovalRecord[] = [];
   selectedRecord: ApprovalRecord | null = null;
@@ -228,10 +228,22 @@ export class ApprovedAccountsComponent implements OnInit {
     switch ((status || '').toUpperCase()) {
       case 'PENDING_CHECKER_APPROVAL':
         return 'Pending approval';
+      case 'PENDING_KYC_AUTHORIZATION':
+        return 'Pending KYC authorization';
+      case 'KYC_PROCESSING':
+        return 'KYC fulfillment in progress';
       case 'ACCOUNT_CREATED':
         return 'Account created';
+      case 'KYC_APPROVED':
+        return 'KYC approved';
       case 'KYC_REVIEWED':
         return 'KYC reviewed';
+      case 'KYC_REJECTED':
+        return 'KYC rejected';
+      case 'FULFILLMENT_FAILED':
+        return 'KYC fulfillment needs attention';
+      case 'DUPLICATE_CIF_BLOCKED':
+        return 'Duplicate CIF blocked';
       case 'REJECTED':
         return 'Rejected';
       case 'FAILED':

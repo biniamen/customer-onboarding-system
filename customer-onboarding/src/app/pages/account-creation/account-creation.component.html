@@ -3,14 +3,14 @@
     <p class="section-eyebrow">Step 4</p>
     <h2 class="section-title max-w-4xl">Prepare account opening</h2>
     <p class="section-copy max-w-3xl">
-      Select the account type, upload the customer photo and signature, and send the request for approval.
+      Select the account type, attach the customer photo and signature, and send the temporary request for KYC authorization.
     </p>
   </div>
 
-  <div *ngIf="pageError" class="status-card error">{{ pageError }}</div>
+  <div *ngIf="pageError" class="status-card error" role="alert"><strong>{{ isDuplicateError ? 'Duplicate onboarding prevented:' : 'Action required:' }}</strong> {{ pageError }}</div>
   <div *ngIf="uploadSuccessMessage" class="status-card success">{{ uploadSuccessMessage }}</div>
   <div *ngIf="approvalRecord" class="status-card success">
-    Case {{ approvalRecord.caseReference }} was submitted successfully and is waiting for checker approval.
+    Case {{ approvalRecord.caseReference }} was submitted successfully and is waiting for KYC authorization.
   </div>
 
   <div class="grid gap-6 2xl:grid-cols-[minmax(0,1.1fr),minmax(0,0.9fr)]">
@@ -18,7 +18,7 @@
       <div class="mb-6 grid gap-4 lg:grid-cols-3">
         <div class="metric-card">
           <p class="text-sm text-slate-500">Customer number</p>
-          <p class="mt-2 text-xl font-bold text-slate-900">{{ customerNumber }}</p>
+          <p class="mt-2 text-xl font-bold text-slate-900">Temporary until KYC approval</p>
         </div>
         <div class="metric-card">
           <p class="text-sm text-slate-500">Customer name</p>
@@ -33,7 +33,7 @@
       <div class="grid gap-5 xl:grid-cols-2">
         <div>
           <label class="field-label" for="accountClass">Account Class</label>
-          <select id="accountClass" class="select-field" formControlName="accountClass" [disabled]="loadingAccountClasses || !accountClasses.length">
+          <select id="accountClass" class="select-field" [class.input-invalid]="controlInvalid('accountClass')" formControlName="accountClass" [disabled]="loadingAccountClasses || !accountClasses.length">
             <option *ngFor="let accountClass of accountClasses" [value]="accountClass.code">
               {{ accountClass.code }} - {{ accountClass.name }}
             </option>
@@ -42,16 +42,17 @@
           <p class="mt-2 text-sm text-rose-600" *ngIf="!loadingAccountClasses && !accountClasses.length">
             Account classes are not available right now. Refresh and try again.
           </p>
+          <p *ngIf="controlInvalid('accountClass')" class="field-error">Select a valid account class.</p>
         </div>
 
         <div>
           <label class="field-label" for="openingAmount">Opening Amount</label>
-          <input id="openingAmount" type="number" class="input-field" formControlName="openingAmount" placeholder="100" />
+          <input id="openingAmount" type="number" min="1" max="1000" class="input-field" [class.input-invalid]="controlInvalid('openingAmount')" formControlName="openingAmount" placeholder="100" />
           <p class="mt-2 text-sm text-slate-500" *ngIf="selectedAccountClassOption">
             Minimum opening amount for {{ selectedAccountClassOption.code }} is
-            {{ minimumOpeningAmount | number:'1.0-2' }} {{ selectedAccountCurrencyCode }}.
+            {{ minimumOpeningAmount | number:'1.0-2' }} {{ selectedAccountCurrencyCode }}. Maximum before KYC approval: 1,000 ETB.
           </p>
-          <p *ngIf="form.controls.openingAmount.touched && form.controls.openingAmount.invalid" class="mt-2 text-sm text-rose-600">
+          <p *ngIf="controlInvalid('openingAmount')" class="field-error">
             Enter at least {{ minimumOpeningAmount | number:'1.0-2' }} {{ selectedAccountCurrencyCode }} for the selected account class.
           </p>
         </div>
@@ -125,12 +126,16 @@
         </div>
       </div>
 
+      <div *ngIf="validationAttempted && form.invalid" class="alert-danger mt-6" role="alert">
+        <strong>Mandatory account setup fields are incomplete.</strong> Provide a valid account class, opening amount, customer photo, and signature before continuing.
+      </div>
+
       <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <button type="button" class="btn-primary" [disabled]="uploading" (click)="uploadAssets()">
-          {{ uploading ? 'Uploading...' : 'Upload Image & Signature' }}
+          {{ uploading ? 'Preparing...' : 'Prepare Image & Signature' }}
         </button>
         <button type="button" class="btn-secondary" [disabled]="!approvalReady || submittingApproval || !!approvalRecord" (click)="submitForApproval()">
-          {{ submittingApproval ? 'Submitting...' : 'Submit For Checker Approval' }}
+          {{ submittingApproval ? 'Submitting...' : 'Submit For KYC Authorization' }}
         </button>
       </div>
     </form>
@@ -156,7 +161,7 @@
         <div class="mt-5 rounded-[24px] border border-emerald-200 bg-emerald-50 p-5" *ngIf="uploadPreviewReady">
         <p class="text-sm font-semibold text-emerald-800">Ready for review</p>
         <p class="mt-2 text-sm leading-7 text-emerald-700">
-            Customer photo and signature are uploaded to CBS, and the request is ready to submit.
+            Customer photo and signature are stored with this temporary request and will be uploaded to CBS only after KYC approval.
         </p>
         </div>
 

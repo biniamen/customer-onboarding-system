@@ -98,10 +98,81 @@ public class PasswordManagementService(
     return MapTemplate(template);
   }
 
+  public async Task<IReadOnlyList<PasswordManagedSystemDto>> GetSystemsAsync(bool includeInactive = false, CancellationToken cancellationToken = default)
+  {
+    var query = dbContext.PasswordManagedSystems.AsNoTracking();
+    if (!includeInactive)
+    {
+      query = query.Where(system => system.IsActive);
+    }
+
+    var systems = await query
+      .OrderBy(system => system.Name)
+      .ToListAsync(cancellationToken);
+
+    return systems.Select(MapSystem).ToList();
+  }
+
+  public async Task<PasswordManagedSystemDto> CreateSystemAsync(CreatePasswordManagedSystemRequest request, string createdByUserName, CancellationToken cancellationToken = default)
+  {
+    var name = RequireSystemName(request.Name);
+    var normalizedName = NormalizeSystemName(name);
+    var exists = await dbContext.PasswordManagedSystems
+      .AnyAsync(system => system.NormalizedName == normalizedName, cancellationToken);
+    if (exists)
+    {
+      throw new InvalidOperationException("This target system already exists.");
+    }
+
+    var now = DateTimeOffset.UtcNow;
+    var system = new PasswordManagedSystem
+    {
+      Name = name,
+      NormalizedName = normalizedName,
+      IsActive = true,
+      CreatedAtUtc = now,
+      CreatedByUserName = (createdByUserName ?? string.Empty).Trim(),
+      UpdatedAtUtc = now,
+      UpdatedByUserName = (createdByUserName ?? string.Empty).Trim()
+    };
+
+    dbContext.PasswordManagedSystems.Add(system);
+    await dbContext.SaveChangesAsync(cancellationToken);
+    return MapSystem(system);
+  }
+
+  public async Task<PasswordManagedSystemDto> UpdateSystemAsync(int id, UpdatePasswordManagedSystemRequest request, string updatedByUserName, CancellationToken cancellationToken = default)
+  {
+    var system = await dbContext.PasswordManagedSystems
+      .FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
+    if (system is null)
+    {
+      throw new InvalidOperationException("Target system was not found.");
+    }
+
+    var name = RequireSystemName(request.Name);
+    var normalizedName = NormalizeSystemName(name);
+    var conflicts = await dbContext.PasswordManagedSystems
+      .AnyAsync(item => item.Id != id && item.NormalizedName == normalizedName, cancellationToken);
+    if (conflicts)
+    {
+      throw new InvalidOperationException("Another target system already uses this name.");
+    }
+
+    system.Name = name;
+    system.NormalizedName = normalizedName;
+    system.IsActive = request.IsActive;
+    system.UpdatedAtUtc = DateTimeOffset.UtcNow;
+    system.UpdatedByUserName = (updatedByUserName ?? string.Empty).Trim();
+
+    await dbContext.SaveChangesAsync(cancellationToken);
+    return MapSystem(system);
+  }
+
   public async Task<PasswordMessageDispatchResultDto> SendPasswordResetSmsAsync(SendPasswordResetSmsRequest request, string requestedByUserName, CancellationToken cancellationToken = default)
   {
     var user = await RequireExternalUserAsync(request.ExternalUserId, cancellationToken);
-    var systemName = RequireSupportedSystemName(request.SystemName);
+    var systemName = await RequireActiveSystemNameAsync(request.SystemName, cancellationToken);
     var template = await RequireTemplateAsync(PasswordMessageTemplateTypes.PasswordReset, cancellationToken);
     var message = EnsureSystemNamePresent(
       PasswordMessageTemplateTypes.PasswordReset,
@@ -129,7 +200,7 @@ public class PasswordManagementService(
   public async Task<PasswordMessageDispatchResultDto> SendNewUserCredentialSmsAsync(SendNewUserCredentialSmsRequest request, string requestedByUserName, CancellationToken cancellationToken = default)
   {
     var user = await RequireExternalUserAsync(request.ExternalUserId, cancellationToken);
-    var systemName = RequireSupportedSystemName(request.SystemName);
+    var systemName = await RequireActiveSystemNameAsync(request.SystemName, cancellationToken);
     var template = await RequireTemplateAsync(PasswordMessageTemplateTypes.NewUserCreation, cancellationToken);
     var message = EnsureSystemNamePresent(
       PasswordMessageTemplateTypes.NewUserCreation,
@@ -423,15 +494,41 @@ public class PasswordManagementService(
     return (templateBody ?? string.Empty).IndexOf("systemName", StringComparison.OrdinalIgnoreCase) >= 0;
   }
 
-  private static string RequireSupportedSystemName(string? systemName)
+  private async Task<string> RequireActiveSystemNameAsync(string? systemName, CancellationToken cancellationToken)
   {
-    if (PasswordMessageSystems.TryNormalize(systemName, out var normalized))
+    var normalizedName = NormalizeSystemName(systemName);
+    if (string.IsNullOrWhiteSpace(normalizedName))
     {
-      return normalized;
+      throw new InvalidOperationException("Please choose a valid target system.");
     }
 
-    throw new InvalidOperationException("Please choose a valid target system.");
+    var system = await dbContext.PasswordManagedSystems
+      .AsNoTracking()
+      .FirstOrDefaultAsync(item => item.NormalizedName == normalizedName && item.IsActive, cancellationToken);
+    if (system is null)
+    {
+      throw new InvalidOperationException("The selected target system is not active or no longer exists.");
+    }
+
+    return system.Name;
   }
+
+  private static string RequireSystemName(string? name)
+  {
+    var value = (name ?? string.Empty).Trim();
+    if (string.IsNullOrWhiteSpace(value))
+    {
+      throw new InvalidOperationException("System name is required.");
+    }
+    if (value.Length > 120)
+    {
+      throw new InvalidOperationException("System name cannot exceed 120 characters.");
+    }
+
+    return value;
+  }
+
+  private static string NormalizeSystemName(string? name) => (name ?? string.Empty).Trim().ToUpperInvariant();
 
   private static PasswordMessageTemplateDto MapTemplate(PasswordMessageTemplate template)
   {
@@ -442,6 +539,17 @@ public class PasswordManagementService(
       template.IsActive,
       template.UpdatedAtUtc,
       template.UpdatedByUserName
+    );
+  }
+
+  private static PasswordManagedSystemDto MapSystem(PasswordManagedSystem system)
+  {
+    return new PasswordManagedSystemDto(
+      system.Id,
+      system.Name,
+      system.IsActive,
+      system.UpdatedAtUtc,
+      system.UpdatedByUserName
     );
   }
 

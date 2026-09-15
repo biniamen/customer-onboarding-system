@@ -21,6 +21,10 @@ export class CustomerSessionService {
   private readonly KEY_FCUBS_RESPONSE = 'nid_fcubs_response';
   private readonly KEY_ACCOUNT_OPENING_DETAILS = 'nid_account_opening_details';
   private readonly KEY_ACCOUNT_CREATION_RESPONSE = 'nid_account_creation_response';
+  private readonly ACCOUNT_OPENING_DB = 'customer-onboarding-attachments';
+  private readonly ACCOUNT_OPENING_STORE = 'account-opening-details';
+  private readonly ACCOUNT_OPENING_RECORD_KEY = 'current';
+  private accountOpeningDetailsCache: AccountOpeningDetails | null = null;
 
   setFan(fan: string): void {
     sessionStorage.setItem(this.KEY_FAN, fan || '');
@@ -140,18 +144,49 @@ export class CustomerSessionService {
     }
   }
 
-  setAccountOpeningDetails(details: AccountOpeningDetails): void {
-    sessionStorage.setItem(this.KEY_ACCOUNT_OPENING_DETAILS, JSON.stringify(details || null));
+  async setAccountOpeningDetails(details: AccountOpeningDetails): Promise<void> {
+    // Base64 images and documents easily exceed sessionStorage's small quota.
+    // Keep the temporary KYC attachments in IndexedDB until the case is submitted.
+    this.accountOpeningDetailsCache = details || null;
+    sessionStorage.removeItem(this.KEY_ACCOUNT_OPENING_DETAILS);
+
+    if (!details) {
+      await this.removeAccountOpeningDetailsFromIndexedDb();
+      return;
+    }
+
+    try {
+      await this.saveAccountOpeningDetailsToIndexedDb(details);
+    } catch {
+      // The in-memory copy still supports the active onboarding flow if browser
+      // storage is unavailable. The request itself always carries the assets.
+    }
   }
 
-  getAccountOpeningDetails<T = AccountOpeningDetails>(): T | null {
+  async getAccountOpeningDetails<T = AccountOpeningDetails>(): Promise<T | null> {
+    if (this.accountOpeningDetailsCache) {
+      return this.accountOpeningDetailsCache as unknown as T;
+    }
+
+    try {
+      const indexedDetails = await this.getAccountOpeningDetailsFromIndexedDb();
+      if (indexedDetails) {
+        this.accountOpeningDetailsCache = indexedDetails;
+        return indexedDetails as unknown as T;
+      }
+    } catch {
+      // Fall through to the legacy session value for a case started before this update.
+    }
+
     const raw = sessionStorage.getItem(this.KEY_ACCOUNT_OPENING_DETAILS);
     if (!raw) {
       return null;
     }
 
     try {
-      return JSON.parse(raw) as T;
+      const details = JSON.parse(raw) as T;
+      this.accountOpeningDetailsCache = details as unknown as AccountOpeningDetails;
+      return details;
     } catch {
       return null;
     }
@@ -174,7 +209,7 @@ export class CustomerSessionService {
     }
   }
 
-  clearAll(): void {
+  async clearAll(): Promise<void> {
     [
       this.KEY_FAN,
       this.KEY_FAN_TXN,
@@ -187,5 +222,84 @@ export class CustomerSessionService {
       this.KEY_ACCOUNT_OPENING_DETAILS,
       this.KEY_ACCOUNT_CREATION_RESPONSE
     ].forEach((key) => sessionStorage.removeItem(key));
+    this.accountOpeningDetailsCache = null;
+    await this.removeAccountOpeningDetailsFromIndexedDb();
+  }
+
+  private openAccountOpeningDatabase(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      if (!('indexedDB' in window)) {
+        reject(new Error('Browser attachment storage is unavailable.'));
+        return;
+      }
+
+      const request = window.indexedDB.open(this.ACCOUNT_OPENING_DB, 1);
+      request.onupgradeneeded = () => {
+        const database = request.result;
+        if (!database.objectStoreNames.contains(this.ACCOUNT_OPENING_STORE)) {
+          database.createObjectStore(this.ACCOUNT_OPENING_STORE);
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error('Unable to open browser attachment storage.'));
+    });
+  }
+
+  private async saveAccountOpeningDetailsToIndexedDb(details: AccountOpeningDetails): Promise<void> {
+    const database = await this.openAccountOpeningDatabase();
+
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction(this.ACCOUNT_OPENING_STORE, 'readwrite');
+      transaction.objectStore(this.ACCOUNT_OPENING_STORE).put(details, this.ACCOUNT_OPENING_RECORD_KEY);
+      transaction.oncomplete = () => {
+        database.close();
+        resolve();
+      };
+      transaction.onerror = () => {
+        database.close();
+        reject(transaction.error || new Error('Unable to save temporary attachments.'));
+      };
+      transaction.onabort = () => {
+        database.close();
+        reject(transaction.error || new Error('Temporary attachment storage was cancelled.'));
+      };
+    });
+  }
+
+  private async getAccountOpeningDetailsFromIndexedDb(): Promise<AccountOpeningDetails | null> {
+    const database = await this.openAccountOpeningDatabase();
+
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction(this.ACCOUNT_OPENING_STORE, 'readonly');
+      const request = transaction.objectStore(this.ACCOUNT_OPENING_STORE).get(this.ACCOUNT_OPENING_RECORD_KEY);
+      request.onsuccess = () => {
+        database.close();
+        resolve((request.result as AccountOpeningDetails | undefined) || null);
+      };
+      request.onerror = () => {
+        database.close();
+        reject(request.error || new Error('Unable to read temporary attachments.'));
+      };
+    });
+  }
+
+  private async removeAccountOpeningDetailsFromIndexedDb(): Promise<void> {
+    try {
+      const database = await this.openAccountOpeningDatabase();
+      await new Promise<void>((resolve, reject) => {
+        const transaction = database.transaction(this.ACCOUNT_OPENING_STORE, 'readwrite');
+        transaction.objectStore(this.ACCOUNT_OPENING_STORE).delete(this.ACCOUNT_OPENING_RECORD_KEY);
+        transaction.oncomplete = () => {
+          database.close();
+          resolve();
+        };
+        transaction.onerror = () => {
+          database.close();
+          reject(transaction.error || new Error('Unable to clear temporary attachments.'));
+        };
+      });
+    } catch {
+      // There is nothing further to clear when IndexedDB is unavailable.
+    }
   }
 }

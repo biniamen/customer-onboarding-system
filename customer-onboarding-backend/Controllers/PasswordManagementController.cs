@@ -121,6 +121,59 @@ public class PasswordManagementController(
     }
   }
 
+  [HttpGet("systems")]
+  public async Task<ActionResult<IReadOnlyList<PasswordManagedSystemDto>>> GetSystems([FromQuery] bool includeInactive = false, CancellationToken cancellationToken = default)
+  {
+    var systems = await passwordManagementService.GetSystemsAsync(includeInactive, cancellationToken);
+    return Ok(systems);
+  }
+
+  [HttpPost("systems")]
+  public async Task<ActionResult<PasswordManagedSystemDto>> CreateSystem([FromBody] CreatePasswordManagedSystemRequest request, CancellationToken cancellationToken)
+  {
+    if (string.IsNullOrWhiteSpace(request.Name))
+    {
+      return BadRequest(new { message = "System name is required." });
+    }
+
+    try
+    {
+      var currentUserName = User.FindFirstValue(ClaimTypes.Name) ?? User.Identity?.Name ?? "system";
+      var system = await passwordManagementService.CreateSystemAsync(request, currentUserName, cancellationToken);
+      await auditService.LogAsync(
+        GetCurrentUserId(), null, "CREATE_PASSWORD_MESSAGE_SYSTEM", "PasswordManagedSystem", system.Id.ToString(),
+        new { system.Name, system.IsActive }, HttpContext.Connection.RemoteIpAddress?.ToString(), cancellationToken);
+      return CreatedAtAction(nameof(GetSystems), new { includeInactive = true }, system);
+    }
+    catch (InvalidOperationException ex)
+    {
+      return BadRequest(new { message = ex.Message });
+    }
+  }
+
+  [HttpPut("systems/{id:int}")]
+  public async Task<ActionResult<PasswordManagedSystemDto>> UpdateSystem(int id, [FromBody] UpdatePasswordManagedSystemRequest request, CancellationToken cancellationToken)
+  {
+    if (string.IsNullOrWhiteSpace(request.Name))
+    {
+      return BadRequest(new { message = "System name is required." });
+    }
+
+    try
+    {
+      var currentUserName = User.FindFirstValue(ClaimTypes.Name) ?? User.Identity?.Name ?? "system";
+      var system = await passwordManagementService.UpdateSystemAsync(id, request, currentUserName, cancellationToken);
+      await auditService.LogAsync(
+        GetCurrentUserId(), null, "UPDATE_PASSWORD_MESSAGE_SYSTEM", "PasswordManagedSystem", system.Id.ToString(),
+        new { system.Name, system.IsActive }, HttpContext.Connection.RemoteIpAddress?.ToString(), cancellationToken);
+      return Ok(system);
+    }
+    catch (InvalidOperationException ex)
+    {
+      return BadRequest(new { message = ex.Message });
+    }
+  }
+
   [HttpPost("send-reset-sms")]
   public async Task<ActionResult<PasswordMessageDispatchResultDto>> SendResetSms([FromBody] SendPasswordResetSmsRequest request, CancellationToken cancellationToken)
   {

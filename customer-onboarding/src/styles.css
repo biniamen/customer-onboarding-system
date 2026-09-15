@@ -62,7 +62,7 @@ body {
 }
 
 .status-card.error {
-  @apply border-rose-200 bg-rose-50 text-rose-700;
+  @apply border-rose-200 bg-rose-50 font-semibold text-rose-700;
 }
 
 .status-card.success {
@@ -94,7 +94,15 @@ body {
 }
 
 .alert-danger {
-  @apply rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700;
+  @apply rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700;
+}
+
+.input-invalid {
+  @apply border-rose-400 bg-rose-50/40 focus:border-rose-500 focus:ring-rose-100;
+}
+
+.field-error {
+  @apply mt-2 text-sm font-bold text-rose-700;
 }
 
 .section-eyebrow {

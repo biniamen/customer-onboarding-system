@@ -9,8 +9,7 @@ namespace CustomerOnboarding.Backend.Services;
 
 public class AccountApprovalService(
   HttpClient httpClient,
-  IOptions<FcubsOptions> fcubsOptions,
-  IBranchWorkingDateService branchWorkingDateService) : IAccountApprovalService
+  IOptions<FcubsOptions> fcubsOptions) : IAccountApprovalService
 {
   private readonly FcubsOptions _fcubsOptions = fcubsOptions.Value;
 
@@ -36,14 +35,8 @@ public class AccountApprovalService(
       return (false, false, message, accountNumber, raw);
     }
 
-    var statusPayload = await BuildStatusChangeEnvelopeAsync(record, accountNumber, cancellationToken);
-    var (statusChangeSuccess, statusSummary, statusLog) = await ApplyStatusChangeAsync(record, accountNumber, statusPayload, cancellationToken);
-    var combinedRaw = $"{raw}{Environment.NewLine}{Environment.NewLine}{statusLog}";
-    var finalMessage = statusChangeSuccess
-      ? $"Account created successfully: {accountNumber}. Account status updated successfully."
-      : $"Account created successfully: {accountNumber}, but account status update failed. {statusSummary}";
-
-    return (true, statusChangeSuccess, finalMessage, accountNumber, combinedRaw);
+    // KYC approval creates the FCUBS account directly. No follow-up status change is sent.
+    return (true, true, $"Account created successfully: {accountNumber}.", accountNumber, raw);
   }
 
   private string BuildSoapEnvelope(OnboardingRecord record)
@@ -93,103 +86,6 @@ public class AccountApprovalService(
     var branchCode = record.BranchCode;
     var accountCode = ResolveAccountCode(accountClass, accountDetails, record.AccountReference);
     return $"{branchCode}{accountCode}CCCCS";
-  }
-
-  private async Task<string> BuildStatusChangeEnvelopeAsync(OnboardingRecord record, string accountNumber, CancellationToken cancellationToken)
-  {
-    var branchCode = accountNumber.Length >= 3 ? accountNumber[..3] : record.BranchCode;
-    var sinceDate = await branchWorkingDateService.GetBranchTodayAsync(branchCode, cancellationToken);
-
-    return $@"<?xml version=""1.0"" encoding=""utf-8""?>
-<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:fcub=""http://fcubs.ofss.com/service/FCUBSSTService"">
-  <soapenv:Header/>
-  <soapenv:Body>
-    <fcub:CREATEMANSTATCHANGE_FSFS_REQ>
-      <fcub:FCUBS_HEADER>
-        <fcub:SOURCE>{EscapeXml(_fcubsOptions.Source)}</fcub:SOURCE>
-        <fcub:UBSCOMP>{EscapeXml(_fcubsOptions.UbsComp)}</fcub:UBSCOMP>
-        <fcub:USERID>{EscapeXml(_fcubsOptions.UserId)}</fcub:USERID>
-        <fcub:BRANCH>{EscapeXml(branchCode)}</fcub:BRANCH>
-        <fcub:SERVICE>{EscapeXml(_fcubsOptions.StatusChangeService)}</fcub:SERVICE>
-        <fcub:OPERATION>{EscapeXml(_fcubsOptions.StatusChangeOperation)}</fcub:OPERATION>
-      </fcub:FCUBS_HEADER>
-      <fcub:FCUBS_BODY>
-        <fcub:Sttms-Ac-Stat-Change-Full>
-          <fcub:CUST_AC_NO>{EscapeXml(accountNumber)}</fcub:CUST_AC_NO>
-          <fcub:BRANCH>{EscapeXml(branchCode)}</fcub:BRANCH>
-          <fcub:SINCE>{EscapeXml(sinceDate)}</fcub:SINCE>
-          <fcub:NEWSTAT>NORM</fcub:NEWSTAT>
-          <fcub:ACSTATNDR1>Y</fcub:ACSTATNDR1>
-          <fcub:AC_STAT_NO_CR>N</fcub:AC_STAT_NO_CR>
-          <fcub:AC_STAT_FROZEN>N</fcub:AC_STAT_FROZEN>
-          <fcub:AC_STAT_DE_POST>Y</fcub:AC_STAT_DE_POST>
-          <fcub:DORMANT>N</fcub:DORMANT>
-        </fcub:Sttms-Ac-Stat-Change-Full>
-      </fcub:FCUBS_BODY>
-    </fcub:CREATEMANSTATCHANGE_FSFS_REQ>
-  </soapenv:Body>
-</soapenv:Envelope>";
-  }
-
-  private async Task<(bool Success, string Summary, string RawLog)> ApplyStatusChangeAsync(OnboardingRecord record, string accountNumber, string statusPayload, CancellationToken cancellationToken)
-  {
-    var rawLog = new StringBuilder();
-    var maxAttempts = Math.Max(1, _fcubsOptions.StatusChangeRetryCount);
-    var baseDelaySeconds = Math.Max(1, _fcubsOptions.StatusChangeRetryDelaySeconds);
-    string lastSummary = "Unknown FCUBS status change error.";
-
-    for (var attempt = 1; attempt <= maxAttempts; attempt++)
-    {
-      using var statusRequest = new HttpRequestMessage(HttpMethod.Post, _fcubsOptions.StatusChangeEndpoint);
-      statusRequest.Content = new StringContent(statusPayload, Encoding.UTF8, "text/xml");
-
-      using var statusResponse = await httpClient.SendAsync(statusRequest, cancellationToken);
-      var statusRaw = await statusResponse.Content.ReadAsStringAsync(cancellationToken);
-      var statusMessageState = ExtractXmlValue(statusRaw, "MSGSTAT");
-      var statusErrorCode = ExtractXmlValue(statusRaw, "ECODE");
-      var statusErrorMessage = ExtractXmlValue(statusRaw, "EDESC");
-      var success = string.Equals(statusMessageState, "SUCCESS", StringComparison.OrdinalIgnoreCase)
-        && string.IsNullOrWhiteSpace(statusErrorMessage);
-
-      rawLog.AppendLine($"<!-- FCUBSSTService Status Change Request Attempt {attempt} -->");
-      rawLog.AppendLine(statusPayload);
-      rawLog.AppendLine();
-      rawLog.AppendLine($"<!-- FCUBSSTService Status Change Response Attempt {attempt} -->");
-      rawLog.AppendLine(statusRaw);
-
-      if (success)
-      {
-        return (true, $"Status change succeeded on attempt {attempt}.", rawLog.ToString());
-      }
-
-      lastSummary = string.IsNullOrWhiteSpace(statusErrorMessage)
-        ? statusMessageState
-        : $"{statusErrorCode}: {statusErrorMessage}".Trim(':', ' ');
-
-      if (attempt >= maxAttempts || !ShouldRetryStatusChange(statusErrorCode, statusErrorMessage))
-      {
-        break;
-      }
-
-      var retryDelay = TimeSpan.FromSeconds(baseDelaySeconds * attempt);
-      await Task.Delay(retryDelay, cancellationToken);
-    }
-
-    return (false, lastSummary, rawLog.ToString());
-  }
-
-  private static bool ShouldRetryStatusChange(string? errorCode, string? errorMessage)
-  {
-    return ContainsIgnoreCase(errorCode, "ST-ACSTC01") ||
-           ContainsIgnoreCase(errorMessage, "ST-ACSTC01") ||
-           ContainsIgnoreCase(errorMessage, "ORA-01403") ||
-           ContainsIgnoreCase(errorMessage, "No record for Status Change for account");
-  }
-
-  private static bool ContainsIgnoreCase(string? value, string expected)
-  {
-    return !string.IsNullOrWhiteSpace(value) &&
-           value.Contains(expected, StringComparison.OrdinalIgnoreCase);
   }
 
   private string ResolveAccountCode(string accountClass, JsonElement accountDetails, string? existingReference)

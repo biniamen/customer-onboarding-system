@@ -6,6 +6,7 @@ import {
   EmployeeDirectoryImportResult,
   EmployeeDirectoryStats,
   ExternalDirectoryUser,
+  PasswordManagedSystem,
   PasswordMessageDispatchResult
 } from 'src/app/models/onboarding.models';
 import { PasswordManagementService } from 'src/app/services/password-management.service';
@@ -19,16 +20,11 @@ import { ToastService } from 'src/app/services/toast.service';
 export class PasswordManagementComponent implements OnInit, OnDestroy {
   readonly minimumSearchLength = 2;
   readonly resultLimit = 20;
-  readonly passwordSystems = [
-    'Flexcube Core banking',
-    'Check Point System',
-    'Webmail',
-    'BI Report'
-  ];
-
   loadingUsers = false;
+  loadingSystems = false;
   loadingDirectoryStats = false;
   importingDirectory = false;
+  savingSystem = false;
   sendingReset = false;
   sendingNewUser = false;
   pageError: string | null = null;
@@ -40,6 +36,13 @@ export class PasswordManagementComponent implements OnInit, OnDestroy {
   directoryStats: EmployeeDirectoryStats | null = null;
   lastImportResult: EmployeeDirectoryImportResult | null = null;
   selectedDirectoryFile: File | null = null;
+  passwordSystems: PasswordManagedSystem[] = [];
+  editingSystemId: number | null = null;
+  editingSystemName = '';
+
+  systemForm = this.fb.group({
+    name: ['', [Validators.required, Validators.maxLength(120)]]
+  });
 
   resetForm = this.fb.group({
     systemName: ['', [Validators.required]],
@@ -63,6 +66,7 @@ export class PasswordManagementComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadEmployeeDirectoryStats();
+    this.loadPasswordSystems();
 
     this.searchTerm$
       .pipe(
@@ -123,6 +127,10 @@ export class PasswordManagementComponent implements OnInit, OnDestroy {
 
   get hasSearchKeyword(): boolean {
     return this.searchTerm.trim().length >= this.minimumSearchLength;
+  }
+
+  get activePasswordSystems(): PasswordManagedSystem[] {
+    return this.passwordSystems.filter((system) => system.isActive);
   }
 
   get searchPrompt(): string {
@@ -189,6 +197,68 @@ export class PasswordManagementComponent implements OnInit, OnDestroy {
         this.loadingDirectoryStats = false;
       }
     });
+  }
+
+  loadPasswordSystems(): void {
+    this.loadingSystems = true;
+    this.passwordManagement.getPasswordSystems(true).subscribe({
+      next: (systems) => {
+        this.passwordSystems = systems || [];
+        this.loadingSystems = false;
+      },
+      error: (error: any) => {
+        this.loadingSystems = false;
+        const message = error?.error?.message || error?.message || 'Unable to load the target system catalogue.';
+        this.toast.error('Systems unavailable', message);
+      }
+    });
+  }
+
+  addPasswordSystem(): void {
+    this.systemForm.markAllAsTouched();
+    if (this.systemForm.invalid) {
+      return;
+    }
+
+    const name = this.systemForm.controls.name.value || '';
+    this.savingSystem = true;
+    this.passwordManagement.createPasswordSystem(name).subscribe({
+      next: (system) => {
+        this.savingSystem = false;
+        this.passwordSystems = [...this.passwordSystems, system].sort((left, right) => left.name.localeCompare(right.name));
+        this.systemForm.reset({ name: '' });
+        this.toast.success('System added', `${system.name} is now available for credential SMS.`);
+      },
+      error: (error: any) => {
+        this.savingSystem = false;
+        this.toast.error('Unable to add system', error?.error?.message || error?.message || 'Please try again.');
+      }
+    });
+  }
+
+  beginSystemEdit(system: PasswordManagedSystem): void {
+    this.editingSystemId = system.id;
+    this.editingSystemName = system.name;
+  }
+
+  cancelSystemEdit(): void {
+    this.editingSystemId = null;
+    this.editingSystemName = '';
+  }
+
+  saveSystemEdit(system: PasswordManagedSystem): void {
+    const name = this.editingSystemName.trim();
+    if (!name) {
+      this.toast.info('System name required', 'Enter a system name before saving.');
+      return;
+    }
+
+    this.updatePasswordSystem(system, name, system.isActive, 'System updated');
+  }
+
+  toggleSystem(system: PasswordManagedSystem): void {
+    const action = system.isActive ? 'deactivated' : 'activated';
+    this.updatePasswordSystem(system, system.name, !system.isActive, `System ${action}`);
   }
 
   onDirectoryFileSelected(event: Event): void {
@@ -284,6 +354,33 @@ export class PasswordManagementComponent implements OnInit, OnDestroy {
         this.sendingNewUser = false;
         const message = error?.error?.message || error?.message || 'Unable to send new user credentials.';
         this.toast.error('Send failed', message);
+      }
+    });
+  }
+
+  private updatePasswordSystem(system: PasswordManagedSystem, name: string, isActive: boolean, successTitle: string): void {
+    this.savingSystem = true;
+    this.passwordManagement.updatePasswordSystem(system.id, name, isActive).subscribe({
+      next: (updated) => {
+        this.savingSystem = false;
+        this.passwordSystems = this.passwordSystems
+          .map((item) => item.id === updated.id ? updated : item)
+          .sort((left, right) => left.name.localeCompare(right.name));
+        this.cancelSystemEdit();
+
+        const replacement = updated.isActive ? updated.name : '';
+        if (this.resetForm.controls.systemName.value === system.name) {
+          this.resetForm.controls.systemName.setValue(replacement);
+        }
+        if (this.newUserForm.controls.systemName.value === system.name) {
+          this.newUserForm.controls.systemName.setValue(replacement);
+        }
+
+        this.toast.success(successTitle, `${updated.name} is ${updated.isActive ? 'available' : 'no longer available'} for credential SMS.`);
+      },
+      error: (error: any) => {
+        this.savingSystem = false;
+        this.toast.error('Unable to update system', error?.error?.message || error?.message || 'Please try again.');
       }
     });
   }

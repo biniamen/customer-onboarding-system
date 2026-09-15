@@ -12,7 +12,7 @@
     </div>
   </div>
 
-  <div *ngIf="apiError" class="status-card error">{{ apiError }}</div>
+  <div *ngIf="apiError" class="status-card error" role="alert"><strong>Attention:</strong> {{ apiError }}</div>
   <div *ngIf="apiSuccess" class="status-card success">{{ apiSuccess }}</div>
 
   <div class="grid gap-5 2xl:grid-cols-[minmax(0,1.55fr),320px]">
@@ -37,7 +37,7 @@
               placeholder="Enter 16-digit FAN"
               (input)="onFanInput($event)"
             />
-            <p *ngIf="f.fan.touched && f.fan.invalid" class="mt-2 text-sm text-rose-600">
+            <p *ngIf="f.fan.touched && f.fan.invalid" class="mt-2 text-sm font-bold text-rose-700">
               A valid 16-digit FAN is required.
             </p>
           </div>
@@ -74,7 +74,7 @@
               placeholder="6-digit OTP"
               (input)="onOtpInput($event)"
             />
-            <p *ngIf="f.otp.touched && f.otp.invalid" class="mt-2 text-sm text-rose-600">
+            <p *ngIf="f.otp.touched && f.otp.invalid" class="mt-2 text-sm font-bold text-rose-700">
               Enter the 6-digit OTP sent to the customer.
             </p>
           </div>

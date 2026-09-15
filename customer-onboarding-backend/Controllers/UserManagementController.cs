@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using CustomerOnboarding.Backend.Data;
 using CustomerOnboarding.Backend.Dtos;
 using CustomerOnboarding.Backend.Models;
@@ -44,6 +45,160 @@ public class UserManagementController(
       .ToListAsync(cancellationToken);
 
     return Ok(branches);
+  }
+
+  [HttpGet("branches/manage")]
+  public async Task<ActionResult<IReadOnlyList<ManagedBranchDto>>> GetManagedBranches(CancellationToken cancellationToken)
+  {
+    var branches = await dbContext.Branches
+      .AsNoTracking()
+      .OrderBy(x => x.BranchCode)
+      .Select(branch => new ManagedBranchDto(
+        branch.BranchCode,
+        branch.BranchName,
+        branch.IsActive,
+        dbContext.Users.Count(user => user.BranchCode == branch.BranchCode),
+        dbContext.Users.Count(user => user.BranchCode == branch.BranchCode && user.IsActive),
+        dbContext.OnboardingRecords.Count(record => record.BranchCode == branch.BranchCode)
+      ))
+      .ToListAsync(cancellationToken);
+
+    return Ok(branches);
+  }
+
+  [HttpPost("branches")]
+  public async Task<ActionResult<ManagedBranchDto>> CreateBranch([FromBody] CreateBranchRequest request, CancellationToken cancellationToken)
+  {
+    var branchCode = NormalizeBranchCode(request.BranchCode);
+    var branchName = NormalizeBranchName(request.BranchName);
+    var validationMessage = ValidateBranch(branchCode, branchName);
+    if (validationMessage is not null)
+    {
+      return BadRequest(new { message = validationMessage });
+    }
+
+    var exists = await dbContext.Branches.AnyAsync(x => x.BranchCode == branchCode, cancellationToken);
+    if (exists)
+    {
+      return Conflict(new { message = $"Branch {branchCode} already exists. Update the existing branch instead." });
+    }
+
+    var branch = new Branch
+    {
+      BranchCode = branchCode,
+      BranchName = branchName,
+      IsActive = true
+    };
+    dbContext.Branches.Add(branch);
+    await dbContext.SaveChangesAsync(cancellationToken);
+
+    await auditService.LogAsync(
+      GetCurrentUserId(),
+      null,
+      "CREATE_BRANCH",
+      "Branch",
+      branch.BranchCode,
+      new { branch.BranchCode, branch.BranchName, branch.IsActive },
+      HttpContext.Connection.RemoteIpAddress?.ToString(),
+      cancellationToken
+    );
+
+    return CreatedAtAction(nameof(GetManagedBranches), new { branchCode = branch.BranchCode }, ToManagedBranch(branch, 0, 0, 0));
+  }
+
+  [HttpPut("branches/{branchCode}")]
+  public async Task<ActionResult<ManagedBranchDto>> UpdateBranch(string branchCode, [FromBody] UpdateBranchRequest request, CancellationToken cancellationToken)
+  {
+    var normalizedCode = NormalizeBranchCode(branchCode);
+    var branchName = NormalizeBranchName(request.BranchName);
+    var validationMessage = ValidateBranch(normalizedCode, branchName);
+    if (validationMessage is not null)
+    {
+      return BadRequest(new { message = validationMessage });
+    }
+
+    var branch = await dbContext.Branches.FirstOrDefaultAsync(x => x.BranchCode == normalizedCode, cancellationToken);
+    if (branch is null)
+    {
+      return NotFound(new { message = "Branch not found." });
+    }
+
+    var activeUserCount = await dbContext.Users.CountAsync(user => user.BranchCode == normalizedCode && user.IsActive, cancellationToken);
+    if (!request.IsActive && activeUserCount > 0)
+    {
+      return Conflict(new
+      {
+        message = $"Branch {normalizedCode} cannot be deactivated while {activeUserCount} active user(s) are assigned. Reassign or deactivate those users first."
+      });
+    }
+
+    var priorName = branch.BranchName;
+    branch.BranchName = branchName;
+    branch.IsActive = request.IsActive;
+
+    // Keep access-control user profiles aligned with a renamed branch.
+    if (!string.Equals(priorName, branchName, StringComparison.Ordinal))
+    {
+      var assignedUsers = await dbContext.Users.Where(user => user.BranchCode == normalizedCode).ToListAsync(cancellationToken);
+      foreach (var user in assignedUsers)
+      {
+        user.BranchName = branchName;
+      }
+    }
+
+    await dbContext.SaveChangesAsync(cancellationToken);
+
+    var assignedUserCount = await dbContext.Users.CountAsync(user => user.BranchCode == normalizedCode, cancellationToken);
+    var onboardingRecordCount = await dbContext.OnboardingRecords.CountAsync(record => record.BranchCode == normalizedCode, cancellationToken);
+    await auditService.LogAsync(
+      GetCurrentUserId(),
+      null,
+      "UPDATE_BRANCH",
+      "Branch",
+      branch.BranchCode,
+      new { branch.BranchCode, branch.BranchName, branch.IsActive },
+      HttpContext.Connection.RemoteIpAddress?.ToString(),
+      cancellationToken
+    );
+
+    return Ok(ToManagedBranch(branch, assignedUserCount, activeUserCount, onboardingRecordCount));
+  }
+
+  [HttpDelete("branches/{branchCode}")]
+  public async Task<IActionResult> DeleteBranch(string branchCode, CancellationToken cancellationToken)
+  {
+    var normalizedCode = NormalizeBranchCode(branchCode);
+    var branch = await dbContext.Branches.FirstOrDefaultAsync(x => x.BranchCode == normalizedCode, cancellationToken);
+    if (branch is null)
+    {
+      return NotFound(new { message = "Branch not found." });
+    }
+
+    var assignedUserCount = await dbContext.Users.CountAsync(user => user.BranchCode == normalizedCode, cancellationToken);
+    var onboardingRecordCount = await dbContext.OnboardingRecords.CountAsync(record => record.BranchCode == normalizedCode, cancellationToken);
+    if (assignedUserCount > 0 || onboardingRecordCount > 0)
+    {
+      return Conflict(new
+      {
+        message = $"Branch {normalizedCode} is retained for audit integrity because it is linked to {assignedUserCount} user(s) and {onboardingRecordCount} onboarding record(s). Deactivate it instead."
+      });
+    }
+
+    dbContext.Branches.Remove(branch);
+    await dbContext.SaveChangesAsync(cancellationToken);
+
+    await auditService.LogAsync(
+      GetCurrentUserId(),
+      null,
+      "DELETE_BRANCH",
+      "Branch",
+      normalizedCode,
+      new { BranchCode = normalizedCode, branch.BranchName },
+      HttpContext.Connection.RemoteIpAddress?.ToString(),
+      cancellationToken
+    );
+
+    return NoContent();
   }
 
   [HttpGet("users")]
@@ -209,6 +364,34 @@ public class UserManagementController(
     var value = (role ?? string.Empty).Trim().ToUpperInvariant();
     return AllowedRoles.Contains(value);
   }
+
+  private static string NormalizeBranchCode(string? branchCode) => (branchCode ?? string.Empty).Trim();
+
+  private static string NormalizeBranchName(string? branchName) => (branchName ?? string.Empty).Trim();
+
+  private static string? ValidateBranch(string branchCode, string branchName)
+  {
+    if (!Regex.IsMatch(branchCode, @"^\d{3}$"))
+    {
+      return "Branch code must contain exactly three digits.";
+    }
+
+    if (branchName.Length < 3 || branchName.Length > 120)
+    {
+      return "Branch name must contain between 3 and 120 characters.";
+    }
+
+    return null;
+  }
+
+  private static ManagedBranchDto ToManagedBranch(Branch branch, int assignedUserCount, int activeUserCount, int onboardingRecordCount) => new(
+    branch.BranchCode,
+    branch.BranchName,
+    branch.IsActive,
+    assignedUserCount,
+    activeUserCount,
+    onboardingRecordCount
+  );
 
   private Guid? GetCurrentUserId()
   {

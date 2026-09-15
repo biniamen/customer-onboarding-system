@@ -12,6 +12,7 @@ import {
   PasswordMessageAuditLogQuery,
   PasswordMessageAuditLogResponse,
   PasswordMessageDispatchResult,
+  PasswordManagedSystem,
   PasswordMessageTemplate,
   SendNewUserCredentialSmsRequest,
   SendPasswordResetSmsRequest,
@@ -49,6 +50,19 @@ export class PasswordManagementService {
 
   getTemplates(): Observable<PasswordMessageTemplate[]> {
     return this.http.get<PasswordMessageTemplate[]>(`${this.baseUrl}/templates`);
+  }
+
+  getPasswordSystems(includeInactive = false): Observable<PasswordManagedSystem[]> {
+    const params = includeInactive ? new HttpParams().set('includeInactive', 'true') : undefined;
+    return this.http.get<PasswordManagedSystem[]>(`${this.baseUrl}/systems`, { params });
+  }
+
+  createPasswordSystem(name: string): Observable<PasswordManagedSystem> {
+    return this.http.post<PasswordManagedSystem>(`${this.baseUrl}/systems`, { name });
+  }
+
+  updatePasswordSystem(id: number, name: string, isActive: boolean): Observable<PasswordManagedSystem> {
+    return this.http.put<PasswordManagedSystem>(`${this.baseUrl}/systems/${id}`, { name, isActive });
   }
 
   saveTemplate(templateType: string, payload: UpdatePasswordMessageTemplateRequest): Observable<PasswordMessageTemplate> {

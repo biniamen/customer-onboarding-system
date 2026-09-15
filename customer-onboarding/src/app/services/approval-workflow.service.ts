@@ -24,6 +24,10 @@ export class ApprovalWorkflowService {
     return this.http.get<ApprovalRecord[]>(`${this.baseUrl}/pending`);
   }
 
+  getKycPendingApprovals(): Observable<ApprovalRecord[]> {
+    return this.http.get<ApprovalRecord[]>(`${this.baseUrl}/kyc/pending`);
+  }
+
   getCompletedRecords(): Observable<ApprovalRecord[]> {
     return this.http.get<ApprovalRecord[]>(`${this.baseUrl}/completed`);
   }
@@ -70,7 +74,11 @@ export class ApprovalWorkflowService {
     return this.http.post<ApprovalRecord>(`${this.baseUrl}/${id}/reject`, { checkerComment });
   }
 
-  markKycReviewed(id: string): Observable<ApprovalRecord> {
-    return this.http.post<ApprovalRecord>(`${this.baseUrl}/${id}/kyc-review`, {});
+  kycApprove(id: string, kycComment: string): Observable<ApprovalRecord> {
+    return this.http.post<ApprovalRecord>(`${this.baseUrl}/${id}/kyc/approve`, { kycComment });
+  }
+
+  kycReject(id: string, kycComment: string): Observable<ApprovalRecord> {
+    return this.http.post<ApprovalRecord>(`${this.baseUrl}/${id}/kyc/reject`, { kycComment });
   }
 }

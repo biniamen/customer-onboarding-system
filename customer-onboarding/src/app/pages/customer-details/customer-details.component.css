@@ -1,3 +1,16 @@
 :host {
   display: block;
 }
+
+.input-invalid {
+  border-color: #fb7185 !important;
+  background-color: #fff8f8 !important;
+  box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.12) !important;
+}
+
+.field-error {
+  margin-top: 0.5rem;
+  color: #e11d48;
+  font-size: 0.8rem;
+  font-weight: 500;
+}

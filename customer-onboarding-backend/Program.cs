@@ -31,8 +31,11 @@ builder.Services.AddScoped<IFundingSourceLookupService, FundingSourceLookupServi
 builder.Services.AddScoped<IAccountClassLookupService, AccountClassLookupService>();
 builder.Services.AddScoped<IEmployeeDirectoryService, EmployeeDirectoryService>();
 builder.Services.AddScoped<IResourceMobilizationService, ResourceMobilizationService>();
+builder.Services.AddScoped<IWatchlistService, WatchlistService>();
+builder.Services.AddScoped<IOnboardingScreeningService, OnboardingScreeningService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient<IAccountApprovalService, AccountApprovalService>();
+builder.Services.AddHttpClient<IOnboardingFulfillmentService, OnboardingFulfillmentService>();
 builder.Services.AddHttpClient<ITelebirrTransferService, TelebirrTransferService>();
 builder.Services.AddHttpClient<IBsaIntegrationService, BsaIntegrationService>();
 builder.Services.AddHttpClient<IRentalPaymentService, RentalPaymentService>();

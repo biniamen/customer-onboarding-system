@@ -83,6 +83,7 @@ export class FanVerificationComponent implements OnInit {
     this.f.fan.markAsTouched();
 
     if (this.f.fan.invalid) {
+      this.apiError = 'Enter a valid 16-digit FAN number before requesting OTP.';
       return;
     }
 

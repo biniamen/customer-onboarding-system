@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { AdditionalCustomerDetails, CustomerProfileSnapshot, FcubsSubmissionResult } from 'src/app/models/onboarding.models';
+import { AdditionalCustomerDetails, CustomerProfileSnapshot } from 'src/app/models/onboarding.models';
 import { CustomerOnboardingService } from 'src/app/services/customer-onboarding.service';
 import { CustomerSessionService } from 'src/app/services/customer-session.service';
 import { ToastService } from 'src/app/services/toast.service';
@@ -14,7 +14,6 @@ import { VerifiedProfileExportService } from 'src/app/services/verified-profile-
 export class ReviewSubmitComponent implements OnInit {
   profile: CustomerProfileSnapshot | null = null;
   details: AdditionalCustomerDetails | null = null;
-  result: FcubsSubmissionResult | null = null;
   nidPhotoPreview = '';
   submitting = false;
   downloading = false;
@@ -31,7 +30,6 @@ export class ReviewSubmitComponent implements OnInit {
   ngOnInit(): void {
     this.profile = this.onboarding.getProfileSnapshot();
     this.details = this.onboarding.getAdditionalDetails();
-    this.result = this.session.getFcubsResponse<FcubsSubmissionResult>();
 
     if (!this.profile) {
       this.router.navigate(['/fan-verification']);
@@ -66,24 +64,13 @@ export class ReviewSubmitComponent implements OnInit {
   submit(): void {
     this.submitting = true;
     this.submissionError = null;
-
-    this.onboarding.createCustomer().subscribe({
-      next: (response) => {
-        this.submitting = false;
-        this.result = response;
-        if (response.success && response.customerNumber) {
-          this.router.navigate(['/account-creation']);
-        }
-      },
-      error: (error: any) => {
-        this.submitting = false;
-        this.submissionError = error?.message || 'Failed to submit customer creation request to FCUBS.';
-      }
-    });
+    // CIF creation is intentionally deferred until KYC authorization.
+    this.submitting = false;
+    this.router.navigate(['/account-creation']);
   }
 
-  startNew(): void {
-    this.session.clearAll();
+  async startNew(): Promise<void> {
+    await this.session.clearAll();
     this.router.navigate(['/fan-verification']);
   }
 

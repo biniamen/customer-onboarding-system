@@ -13,7 +13,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   public DbSet<ResourceMobilizationRecord> ResourceMobilizationRecords => Set<ResourceMobilizationRecord>();
   public DbSet<BsaSubmissionRecord> BsaSubmissionRecords => Set<BsaSubmissionRecord>();
   public DbSet<PasswordMessageTemplate> PasswordMessageTemplates => Set<PasswordMessageTemplate>();
+  public DbSet<PasswordManagedSystem> PasswordManagedSystems => Set<PasswordManagedSystem>();
   public DbSet<EmployeeDirectoryEntry> EmployeeDirectoryEntries => Set<EmployeeDirectoryEntry>();
+  public DbSet<WatchlistEntry> WatchlistEntries => Set<WatchlistEntry>();
   public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -45,6 +47,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
       entity.Property(x => x.CaseReference).HasMaxLength(40);
       entity.Property(x => x.Status).HasMaxLength(48);
       entity.Property(x => x.CustomerNumber).HasMaxLength(40);
+      entity.Property(x => x.TemporaryReference).HasMaxLength(48);
       entity.Property(x => x.CustomerName).HasMaxLength(160);
       entity.Property(x => x.BranchCode).HasMaxLength(16);
       entity.Property(x => x.AccountClass).HasMaxLength(16);
@@ -58,6 +61,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
       entity.Property(x => x.IdType).HasMaxLength(80);
       entity.Property(x => x.ResidentIdNumber).HasMaxLength(80);
       entity.Property(x => x.TinNumber).HasMaxLength(80);
+      entity.Property(x => x.ScreeningStatus).HasMaxLength(24);
+      entity.Property(x => x.KycReference).HasMaxLength(64);
       entity.Property(x => x.OpeningAmount).HasPrecision(18, 2);
       entity.HasOne(x => x.MakerUser)
         .WithMany()
@@ -71,6 +76,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         .WithMany()
         .HasForeignKey(x => x.KycReviewerUserId)
         .OnDelete(DeleteBehavior.Restrict);
+      entity.HasIndex(x => new { x.Status, x.BranchCode });
+      entity.HasIndex(x => x.Psut);
     });
 
     modelBuilder.Entity<AuditLog>(entity =>
@@ -216,6 +223,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
       entity.Property(x => x.UpdatedByUserName).HasMaxLength(150);
     });
 
+    modelBuilder.Entity<PasswordManagedSystem>(entity =>
+    {
+      entity.HasIndex(x => x.NormalizedName).IsUnique();
+      entity.Property(x => x.Name).HasMaxLength(120);
+      entity.Property(x => x.NormalizedName).HasMaxLength(120);
+      entity.Property(x => x.CreatedByUserName).HasMaxLength(150);
+      entity.Property(x => x.UpdatedByUserName).HasMaxLength(150);
+    });
+
     modelBuilder.Entity<EmployeeDirectoryEntry>(entity =>
     {
       entity.HasIndex(x => x.EmployeeReference).IsUnique();
@@ -243,6 +259,33 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
       entity.Property(x => x.District).HasMaxLength(80);
       entity.Property(x => x.SourceFileName).HasMaxLength(260);
       entity.Property(x => x.SourceSheetName).HasMaxLength(100);
+    });
+
+    modelBuilder.Entity<WatchlistEntry>(entity =>
+    {
+      entity.HasIndex(x => x.EntryKey).IsUnique();
+      entity.HasIndex(x => x.NormalizedName);
+      entity.HasIndex(x => new { x.IsActive, x.ScreeningCategory });
+      entity.HasIndex(x => x.SourceReference);
+      entity.Property(x => x.EntryKey).HasMaxLength(64);
+      entity.Property(x => x.FullName).HasMaxLength(240);
+      entity.Property(x => x.NormalizedName).HasMaxLength(240);
+      entity.Property(x => x.ScreeningCategory).HasMaxLength(40);
+      entity.Property(x => x.SourceList).HasMaxLength(160);
+      entity.Property(x => x.SourceReference).HasMaxLength(160);
+      entity.Property(x => x.RiskLevel).HasMaxLength(40);
+      entity.Property(x => x.Nationality).HasMaxLength(120);
+      entity.Property(x => x.PlaceOfBirth).HasMaxLength(160);
+      entity.Property(x => x.DocumentType).HasMaxLength(100);
+      entity.Property(x => x.DocumentNumber).HasMaxLength(160);
+      entity.Property(x => x.PositionOrRole).HasMaxLength(240);
+      entity.Property(x => x.Organization).HasMaxLength(240);
+      entity.Property(x => x.Country).HasMaxLength(120);
+      entity.Property(x => x.CityOrRegion).HasMaxLength(160);
+      entity.Property(x => x.SourceUrl).HasMaxLength(500);
+      entity.Property(x => x.ImportedFileName).HasMaxLength(260);
+      entity.Property(x => x.CreatedByUserName).HasMaxLength(150);
+      entity.Property(x => x.UpdatedByUserName).HasMaxLength(150);
     });
   }
 }

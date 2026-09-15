@@ -15,6 +15,7 @@ export class CustomerDetailsComponent implements OnInit {
   profile: CustomerProfileSnapshot | null = null;
   nidPhotoPreview = '';
   exportingProfile = false;
+  validationAttempted = false;
   readonly internalReferencePrefix = 'DOC';
 
   form = this.fb.group({
@@ -33,7 +34,10 @@ export class CustomerDetailsComponent implements OnInit {
     idType: ['FAYDA / NATIONAL ID', [Validators.required, Validators.maxLength(80)]],
     residentIdNumber: ['', [Validators.maxLength(80)]],
     tinNumber: ['', [Validators.maxLength(80)]],
-    guardianName: ['', [Validators.maxLength(120)]]
+    guardianName: ['', [Validators.maxLength(120)]],
+    isSoleProprietor: [false],
+    businessLicenseNumber: ['', [Validators.maxLength(80)]],
+    businessRegistrationNumber: ['', [Validators.maxLength(80)]]
   });
 
   constructor(
@@ -78,6 +82,60 @@ export class CustomerDetailsComponent implements OnInit {
     return monthlyIncome && monthlyIncome > 0 ? Number(monthlyIncome) * 12 : null;
   }
 
+  controlInvalid(controlName: string): boolean {
+    const control = this.form.get(controlName);
+    return !!control && (control.touched || this.validationAttempted) && control.invalid;
+  }
+
+  get validationIssues(): string[] {
+    const fields: Array<[string, string]> = [
+      ['motherName', 'Mother name'],
+      ['occupation', 'Occupation'],
+      ['workPosition', 'Work position'],
+      ['mobileNumber', 'Mobile number'],
+      ['placeOfBirth', 'Place of birth'],
+      ['idType', 'ID type'],
+      ['employer', 'Employer'],
+      ['monthlyIncome', 'Average monthly income'],
+      ['title', 'Customer title'],
+      ['maritalStatus', 'Marital status'],
+      ['staffStatus', 'Staff status']
+    ];
+
+    if (this.profile?.minor) {
+      fields.push(['guardianName', 'Guardian name']);
+    }
+
+    return fields
+      .filter(([controlName]) => this.form.get(controlName)?.invalid)
+      .map(([, label]) => label);
+  }
+
+  fieldError(controlName: string): string {
+    const control = this.form.get(controlName);
+    if (!control?.errors) {
+      return '';
+    }
+
+    if (control.hasError('required')) {
+      return 'This field is required.';
+    }
+    if (control.hasError('email')) {
+      return 'Enter a valid email address.';
+    }
+    if (control.hasError('pattern')) {
+      return 'Enter a valid Ethiopian mobile number.';
+    }
+    if (control.hasError('min')) {
+      return 'Enter an amount greater than zero.';
+    }
+    if (control.hasError('maxlength')) {
+      return `Maximum ${control.getError('maxlength').requiredLength} characters allowed.`;
+    }
+
+    return 'Enter a valid value.';
+  }
+
   goBack(): void {
     this.router.navigate(['/fan-verification']);
   }
@@ -97,6 +155,7 @@ export class CustomerDetailsComponent implements OnInit {
   }
 
   continue(): void {
+    this.validationAttempted = true;
     this.form.markAllAsTouched();
     if (this.form.invalid) {
       this.toast.error('Missing required details', 'Complete the mandatory KYC fields before continuing.');

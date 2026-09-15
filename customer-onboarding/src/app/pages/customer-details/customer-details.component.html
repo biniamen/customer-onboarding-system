@@ -89,115 +89,150 @@
         <p class="text-[0.9rem] text-slate-500">Fill all required fields before continuing.</p>
       </div>
 
+      <div *ngIf="validationAttempted && form.invalid" class="alert-danger mb-6" role="alert">
+        <strong>Mandatory information is incomplete:</strong>
+        <span *ngIf="validationIssues.length"> {{ validationIssues.join(', ') }}.</span>
+        Review the fields marked in red before continuing.
+      </div>
+
       <div class="grid gap-5 xl:grid-cols-2">
         <div class="md:col-span-2">
-          <label class="field-label" for="motherName">Mother Name</label>
-          <input id="motherName" class="input-field" formControlName="motherName" placeholder="Enter mother name" />
+          <label class="field-label" for="motherName">Mother Name <span class="text-rose-600">*</span></label>
+          <input id="motherName" class="input-field" [class.input-invalid]="controlInvalid('motherName')" formControlName="motherName" placeholder="Enter mother name" />
+          <p *ngIf="controlInvalid('motherName')" class="field-error">{{ fieldError('motherName') }}</p>
         </div>
 
         <div>
-          <label class="field-label" for="occupation">Occupation</label>
-          <input id="occupation" class="input-field" formControlName="occupation" placeholder="Occupation" />
+          <label class="field-label" for="occupation">Occupation <span class="text-rose-600">*</span></label>
+          <input id="occupation" class="input-field" [class.input-invalid]="controlInvalid('occupation')" formControlName="occupation" placeholder="Occupation" />
+          <p *ngIf="controlInvalid('occupation')" class="field-error">{{ fieldError('occupation') }}</p>
         </div>
 
         <div>
-          <label class="field-label" for="workPosition">Work Position</label>
-          <input id="workPosition" class="input-field" formControlName="workPosition" placeholder="Work position" />
+          <label class="field-label" for="workPosition">Work Position <span class="text-rose-600">*</span></label>
+          <input id="workPosition" class="input-field" [class.input-invalid]="controlInvalid('workPosition')" formControlName="workPosition" placeholder="Work position" />
+          <p *ngIf="controlInvalid('workPosition')" class="field-error">{{ fieldError('workPosition') }}</p>
         </div>
 
         <div>
-          <label class="field-label" for="mobileNumber">Mobile Number</label>
-          <input id="mobileNumber" class="input-field" formControlName="mobileNumber" placeholder="09XXXXXXXX" />
-          <p *ngIf="form.controls.mobileNumber.touched && form.controls.mobileNumber.invalid" class="mt-2 text-sm text-rose-600">
-            Enter a valid Ethiopian mobile number.
-          </p>
+          <label class="field-label" for="mobileNumber">Mobile Number <span class="text-rose-600">*</span></label>
+          <input id="mobileNumber" class="input-field" [class.input-invalid]="controlInvalid('mobileNumber')" formControlName="mobileNumber" placeholder="09XXXXXXXX" />
+          <p *ngIf="controlInvalid('mobileNumber')" class="field-error">{{ fieldError('mobileNumber') }}</p>
         </div>
 
         <div>
           <label class="field-label" for="email">Email Address</label>
-          <input id="email" class="input-field" formControlName="email" placeholder="customer@example.com" />
-          <p *ngIf="form.controls.email.touched && form.controls.email.value && form.controls.email.invalid" class="mt-2 text-sm text-rose-600">
-            Enter a valid email address.
-          </p>
+          <input id="email" class="input-field" [class.input-invalid]="controlInvalid('email')" formControlName="email" placeholder="customer@example.com" />
+          <p *ngIf="controlInvalid('email')" class="field-error">{{ fieldError('email') }}</p>
         </div>
 
         <div>
-          <label class="field-label" for="placeOfBirth">Place of Birth</label>
-          <input id="placeOfBirth" class="input-field" formControlName="placeOfBirth" placeholder="Place of birth" />
+          <label class="field-label" for="placeOfBirth">Place of Birth <span class="text-rose-600">*</span></label>
+          <input id="placeOfBirth" class="input-field" [class.input-invalid]="controlInvalid('placeOfBirth')" formControlName="placeOfBirth" placeholder="Place of birth" />
+          <p *ngIf="controlInvalid('placeOfBirth')" class="field-error">{{ fieldError('placeOfBirth') }}</p>
         </div>
 
         <div>
-          <label class="field-label" for="idType">ID Type</label>
-          <input id="idType" class="input-field" formControlName="idType" placeholder="Fayda / National ID" />
+          <label class="field-label" for="idType">ID Type <span class="text-rose-600">*</span></label>
+          <input id="idType" class="input-field" [class.input-invalid]="controlInvalid('idType')" formControlName="idType" placeholder="Fayda / National ID" />
+          <p *ngIf="controlInvalid('idType')" class="field-error">{{ fieldError('idType') }}</p>
         </div>
 
         <div>
-          <label class="field-label" for="employer">Employer</label>
-          <input id="employer" class="input-field" formControlName="employer" placeholder="Employer or organization" />
+          <label class="field-label" for="employer">Employer <span class="text-rose-600">*</span></label>
+          <input id="employer" class="input-field" [class.input-invalid]="controlInvalid('employer')" formControlName="employer" placeholder="Employer or organization" />
+          <p *ngIf="controlInvalid('employer')" class="field-error">{{ fieldError('employer') }}</p>
         </div>
 
         <div>
-          <label class="field-label" for="monthlyIncome">Average Monthly Income (ETB)</label>
+          <label class="field-label" for="monthlyIncome">Average Monthly Income (ETB) <span *ngIf="!customer.minor" class="text-rose-600">*</span></label>
           <input
             id="monthlyIncome"
             type="number"
             class="input-field"
+            [class.input-invalid]="controlInvalid('monthlyIncome')"
             formControlName="monthlyIncome"
             [placeholder]="customer.minor ? 'Optional for minor customer' : 'Enter average monthly income'"
           />
           <p *ngIf="customer.minor" class="mt-2 text-sm text-slate-500">
             Monthly income is optional for minor customers and can be added only when available.
           </p>
+          <p *ngIf="controlInvalid('monthlyIncome')" class="field-error">{{ fieldError('monthlyIncome') }}</p>
         </div>
 
         <div>
           <label class="field-label" for="residentIdNumber">Resident ID / Yellow Card Number</label>
-          <input id="residentIdNumber" class="input-field" formControlName="residentIdNumber" placeholder="Optional resident or yellow card number" />
+          <input id="residentIdNumber" class="input-field" [class.input-invalid]="controlInvalid('residentIdNumber')" formControlName="residentIdNumber" placeholder="Optional resident or yellow card number" />
+          <p *ngIf="controlInvalid('residentIdNumber')" class="field-error">{{ fieldError('residentIdNumber') }}</p>
         </div>
 
         <div>
           <label class="field-label" for="tinNumber">TIN Number</label>
-          <input id="tinNumber" class="input-field" formControlName="tinNumber" placeholder="Optional unless required by account type" />
+          <input id="tinNumber" class="input-field" [class.input-invalid]="controlInvalid('tinNumber')" formControlName="tinNumber" placeholder="Optional unless required by account type" />
+          <p *ngIf="controlInvalid('tinNumber')" class="field-error">{{ fieldError('tinNumber') }}</p>
+        </div>
+
+        <div class="xl:col-span-2 rounded-[20px] border border-brand-100 bg-brand-50/40 p-4">
+          <label class="flex cursor-pointer items-center gap-3 text-sm font-semibold text-slate-900">
+            <input type="checkbox" formControlName="isSoleProprietor" class="h-4 w-4 rounded border-slate-300 text-brand-700" />
+            Individual customer operates as a sole proprietor
+          </label>
+          <div *ngIf="form.controls.isSoleProprietor.value" class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="field-label" for="businessLicenseNumber">Business License Number</label>
+              <input id="businessLicenseNumber" class="input-field" [class.input-invalid]="controlInvalid('businessLicenseNumber')" formControlName="businessLicenseNumber" placeholder="Optional license number" />
+              <p *ngIf="controlInvalid('businessLicenseNumber')" class="field-error">{{ fieldError('businessLicenseNumber') }}</p>
+            </div>
+            <div>
+              <label class="field-label" for="businessRegistrationNumber">Business Registration Number</label>
+              <input id="businessRegistrationNumber" class="input-field" [class.input-invalid]="controlInvalid('businessRegistrationNumber')" formControlName="businessRegistrationNumber" placeholder="Optional registration number" />
+              <p *ngIf="controlInvalid('businessRegistrationNumber')" class="field-error">{{ fieldError('businessRegistrationNumber') }}</p>
+            </div>
+          </div>
         </div>
 
         <div>
           <label class="field-label" for="title">Customer Title</label>
-          <select id="title" class="select-field" formControlName="title">
+          <select id="title" class="select-field" [class.input-invalid]="controlInvalid('title')" formControlName="title">
             <option value="Ato">Ato</option>
             <option value="W/t">W/t</option>
             <option value="Dr">Dr</option>
             <option value="Hajji">Hajji</option>
             <option value="MINOR">MINOR</option>
           </select>
+          <p *ngIf="controlInvalid('title')" class="field-error">{{ fieldError('title') }}</p>
         </div>
 
         <div>
           <label class="field-label" for="maritalStatus">Marital Status</label>
-          <select id="maritalStatus" class="select-field" formControlName="maritalStatus">
+          <select id="maritalStatus" class="select-field" [class.input-invalid]="controlInvalid('maritalStatus')" formControlName="maritalStatus">
             <option value="S">Single</option>
             <option value="M">Married</option>
           </select>
+          <p *ngIf="controlInvalid('maritalStatus')" class="field-error">{{ fieldError('maritalStatus') }}</p>
         </div>
 
         <div>
           <label class="field-label" for="staffStatus">Staff Status</label>
-          <select id="staffStatus" class="select-field" formControlName="staffStatus">
+          <select id="staffStatus" class="select-field" [class.input-invalid]="controlInvalid('staffStatus')" formControlName="staffStatus">
             <option value="NON_STAFF">Non-staff</option>
             <option value="STAFF">Staff</option>
           </select>
+          <p *ngIf="controlInvalid('staffStatus')" class="field-error">{{ fieldError('staffStatus') }}</p>
         </div>
 
         <div class="xl:col-span-2">
-          <label class="field-label" for="guardianName">Guardian Name</label>
-          <input id="guardianName" class="input-field" formControlName="guardianName" [placeholder]="customer.minor ? 'Enter guardian name' : 'Optional guardian name'" />
+          <label class="field-label" for="guardianName">Guardian Name <span *ngIf="customer.minor" class="text-rose-600">*</span></label>
+          <input id="guardianName" class="input-field" [class.input-invalid]="controlInvalid('guardianName')" formControlName="guardianName" [placeholder]="customer.minor ? 'Enter guardian name' : 'Optional guardian name'" />
           <p *ngIf="customer.minor" class="mt-2 text-sm text-slate-500">
             Guardian name is required for minor customer onboarding.
           </p>
+          <p *ngIf="controlInvalid('guardianName')" class="field-error">{{ fieldError('guardianName') }}</p>
         </div>
       </div>
 
-      <p *ngIf="form.invalid && (form.dirty || form.touched)" class="mt-6 text-sm text-rose-600">
-        Complete all mandatory fields before continuing.
+      <p *ngIf="validationAttempted && form.invalid" class="mt-6 text-sm font-bold text-rose-700">
+        Complete all mandatory fields marked in red before continuing.
       </p>
 
       <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">

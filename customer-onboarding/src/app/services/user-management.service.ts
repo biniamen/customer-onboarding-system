@@ -4,8 +4,11 @@ import { Observable } from 'rxjs';
 import {
   AdminUserListItem,
   BranchOption,
+  CreateBranchRequest,
   CreateUserRequest,
+  ManagedBranch,
   ResetUserPasswordRequest,
+  UpdateBranchRequest,
   UpdateUserRequest
 } from '../models/onboarding.models';
 import { environment } from 'src/environments/environment';
@@ -18,6 +21,22 @@ export class UserManagementService {
 
   getBranches(): Observable<BranchOption[]> {
     return this.http.get<BranchOption[]>(`${this.baseUrl}/branches`);
+  }
+
+  getManagedBranches(): Observable<ManagedBranch[]> {
+    return this.http.get<ManagedBranch[]>(`${this.baseUrl}/branches/manage`);
+  }
+
+  createBranch(payload: CreateBranchRequest): Observable<ManagedBranch> {
+    return this.http.post<ManagedBranch>(`${this.baseUrl}/branches`, payload);
+  }
+
+  updateBranch(branchCode: string, payload: UpdateBranchRequest): Observable<ManagedBranch> {
+    return this.http.put<ManagedBranch>(`${this.baseUrl}/branches/${encodeURIComponent(branchCode)}`, payload);
+  }
+
+  deleteBranch(branchCode: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/branches/${encodeURIComponent(branchCode)}`);
   }
 
   getUsers(): Observable<AdminUserListItem[]> {

@@ -1,14 +1,13 @@
 <div class="space-y-7" *ngIf="profile as customer">
   <div>
     <p class="section-eyebrow">Step 3</p>
-    <h2 class="section-title">Review and create customer</h2>
+    <h2 class="section-title">Review onboarding request</h2>
     <p class="section-copy max-w-3xl">
-      Confirm the details below, then create the customer profile and continue to account setup.
+      Confirm the details below, then prepare the temporary onboarding request for KYC authorization.
     </p>
   </div>
 
   <div *ngIf="submissionError" class="status-card error">{{ submissionError }}</div>
-  <div *ngIf="result?.message" class="status-card" [ngClass]="result?.success ? 'success' : 'error'">{{ result?.message }}</div>
 
   <div class="grid gap-6 2xl:grid-cols-[minmax(0,0.95fr),minmax(0,1.15fr)]">
     <div class="space-y-6">
@@ -62,19 +61,6 @@
         </div>
       </div>
 
-      <div class="panel-card bg-gradient-to-r from-accent-50 via-white to-brand-50/70" *ngIf="result as submission">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-700">Creation result</p>
-        <div class="mt-4 grid gap-4 sm:grid-cols-2">
-          <div class="metric-card">
-            <p class="text-sm text-slate-500">Customer number</p>
-            <p class="mt-2 text-xl font-bold text-slate-900">{{ submission.customerNumber || 'Not returned' }}</p>
-          </div>
-          <div class="metric-card">
-            <p class="text-sm text-slate-500">Account number</p>
-            <p class="mt-2 text-xl font-bold text-slate-900">{{ submission.accountNumber || 'Not returned' }}</p>
-          </div>
-        </div>
-      </div>
     </div>
 
     <div class="panel-card" *ngIf="details as formDetails">
@@ -152,9 +138,9 @@
       <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <button type="button" class="btn-secondary" (click)="back()">Back to edit</button>
         <button type="button" class="btn-primary" [disabled]="submitting" (click)="submit()">
-          {{ submitting ? 'Submitting...' : 'Create Customer' }}
+          {{ submitting ? 'Continuing...' : 'Continue to Account Setup' }}
         </button>
-        <button type="button" class="btn-secondary" *ngIf="result?.success" (click)="startNew()">Start new onboarding</button>
+        <button type="button" class="btn-secondary" (click)="startNew()">Start new onboarding</button>
       </div>
     </div>
   </div>

@@ -16,9 +16,10 @@ namespace CustomerOnboarding.Backend.Controllers;
 public class OnboardingRecordsController(
   AppDbContext dbContext,
   IAuditService auditService,
-  IAccountApprovalService accountApprovalService,
   IFundingSourceLookupService fundingSourceLookupService,
-  IAccountClassLookupService accountClassLookupService
+  IAccountClassLookupService accountClassLookupService,
+  IOnboardingScreeningService onboardingScreeningService,
+  IOnboardingFulfillmentService onboardingFulfillmentService
 ) : ControllerBase
 {
   private static readonly JsonSerializerOptions PersistJsonOptions = new()
@@ -91,8 +92,25 @@ public class OnboardingRecordsController(
       .Include(x => x.KycReviewerUser)
       .Where(x =>
         x.BranchCode == currentUser.BranchCode &&
-        (x.Status == WorkflowStatuses.AccountCreated || x.Status == WorkflowStatuses.KycReviewed))
-      .OrderByDescending(x => x.KycReviewedAtUtc ?? x.ReviewedAtUtc ?? x.UpdatedAtUtc)
+        (x.Status == WorkflowStatuses.KycApproved || x.Status == WorkflowStatuses.AccountCreated || x.Status == WorkflowStatuses.KycReviewed))
+      .OrderByDescending(x => x.KycApprovedAtUtc ?? x.KycReviewedAtUtc ?? x.ReviewedAtUtc ?? x.UpdatedAtUtc)
+      .ToListAsync(cancellationToken);
+
+    return Ok(records.Select(Map));
+  }
+
+  [HttpGet("kyc/pending")]
+  [Authorize(Roles = UserRoles.KycUnit)]
+  public async Task<ActionResult<IEnumerable<OnboardingRecordDto>>> KycPending(CancellationToken cancellationToken)
+  {
+    var records = await dbContext.OnboardingRecords
+      .Include(x => x.MakerUser)
+      .Include(x => x.KycReviewerUser)
+      .Where(x => x.Status == WorkflowStatuses.PendingKycAuthorization ||
+                  x.Status == WorkflowStatuses.PendingCheckerApproval ||
+                  x.Status == WorkflowStatuses.FulfillmentFailed ||
+                  x.Status == WorkflowStatuses.DuplicateCifBlocked)
+      .OrderByDescending(x => x.SubmittedAtUtc)
       .ToListAsync(cancellationToken);
 
     return Ok(records.Select(Map));
@@ -195,21 +213,21 @@ public class OnboardingRecordsController(
         Today = new
         {
           Total = group.Count(x => x.SubmittedAtUtc >= rangeStartUtc && x.SubmittedAtUtc <= rangeEndUtc),
-          Pending = group.Count(x => x.Status == WorkflowStatuses.PendingCheckerApproval && x.SubmittedAtUtc >= rangeStartUtc && x.SubmittedAtUtc <= rangeEndUtc),
-          AccountCreated = group.Count(x => x.Status == WorkflowStatuses.AccountCreated && x.SubmittedAtUtc >= rangeStartUtc && x.SubmittedAtUtc <= rangeEndUtc),
-          KycReviewed = group.Count(x => x.Status == WorkflowStatuses.KycReviewed && x.SubmittedAtUtc >= rangeStartUtc && x.SubmittedAtUtc <= rangeEndUtc),
-          Failed = group.Count(x => x.Status == WorkflowStatuses.Failed && x.SubmittedAtUtc >= rangeStartUtc && x.SubmittedAtUtc <= rangeEndUtc),
-          Rejected = group.Count(x => x.Status == WorkflowStatuses.Rejected && x.SubmittedAtUtc >= rangeStartUtc && x.SubmittedAtUtc <= rangeEndUtc),
+          Pending = group.Count(x => (x.Status == WorkflowStatuses.PendingKycAuthorization || x.Status == WorkflowStatuses.PendingCheckerApproval) && x.SubmittedAtUtc >= rangeStartUtc && x.SubmittedAtUtc <= rangeEndUtc),
+          AccountCreated = group.Count(x => (x.Status == WorkflowStatuses.AccountCreated || x.Status == WorkflowStatuses.KycApproved) && x.SubmittedAtUtc >= rangeStartUtc && x.SubmittedAtUtc <= rangeEndUtc),
+          KycReviewed = group.Count(x => (x.Status == WorkflowStatuses.KycReviewed || x.Status == WorkflowStatuses.KycApproved) && x.SubmittedAtUtc >= rangeStartUtc && x.SubmittedAtUtc <= rangeEndUtc),
+          Failed = group.Count(x => (x.Status == WorkflowStatuses.Failed || x.Status == WorkflowStatuses.FulfillmentFailed || x.Status == WorkflowStatuses.DuplicateCifBlocked) && x.SubmittedAtUtc >= rangeStartUtc && x.SubmittedAtUtc <= rangeEndUtc),
+          Rejected = group.Count(x => (x.Status == WorkflowStatuses.Rejected || x.Status == WorkflowStatuses.KycRejected) && x.SubmittedAtUtc >= rangeStartUtc && x.SubmittedAtUtc <= rangeEndUtc),
           TotalOpeningAmount = group.Where(x => x.SubmittedAtUtc >= rangeStartUtc && x.SubmittedAtUtc <= rangeEndUtc).Sum(x => (decimal?)x.OpeningAmount) ?? 0m
         },
         GrandTotal = new
         {
           Total = group.Count(),
-          Pending = group.Count(x => x.Status == WorkflowStatuses.PendingCheckerApproval),
-          AccountCreated = group.Count(x => x.Status == WorkflowStatuses.AccountCreated),
-          KycReviewed = group.Count(x => x.Status == WorkflowStatuses.KycReviewed),
-          Failed = group.Count(x => x.Status == WorkflowStatuses.Failed),
-          Rejected = group.Count(x => x.Status == WorkflowStatuses.Rejected),
+          Pending = group.Count(x => x.Status == WorkflowStatuses.PendingKycAuthorization || x.Status == WorkflowStatuses.PendingCheckerApproval),
+          AccountCreated = group.Count(x => x.Status == WorkflowStatuses.AccountCreated || x.Status == WorkflowStatuses.KycApproved),
+          KycReviewed = group.Count(x => x.Status == WorkflowStatuses.KycReviewed || x.Status == WorkflowStatuses.KycApproved),
+          Failed = group.Count(x => x.Status == WorkflowStatuses.Failed || x.Status == WorkflowStatuses.FulfillmentFailed || x.Status == WorkflowStatuses.DuplicateCifBlocked),
+          Rejected = group.Count(x => x.Status == WorkflowStatuses.Rejected || x.Status == WorkflowStatuses.KycRejected),
           TotalOpeningAmount = group.Sum(x => (decimal?)x.OpeningAmount) ?? 0m
         }
       })
@@ -318,17 +336,23 @@ public class OnboardingRecordsController(
       });
     }
 
-    if (string.Equals(request.AccountDetails.FundingSourceType, "ACCOUNT", StringComparison.OrdinalIgnoreCase))
+    if (requestedOpeningAmount > 1000m)
     {
-      var eligibleAccounts = await fundingSourceLookupService.GetEligibleAccountsAsync(request.CustomerNumber, cancellationToken);
-      if (!eligibleAccounts.Any(account => string.Equals(account.AccountNumber, request.AccountDetails.FundingSourceValue, StringComparison.OrdinalIgnoreCase)))
-      {
-        return BadRequest(new { message = "The selected debit account is not eligible for this customer number." });
-      }
+      return BadRequest(new { message = "Initial opening deposit cannot exceed ETB 1,000 before KYC approval." });
     }
 
     var userId = GetRequiredUserId();
     var currentUser = await dbContext.Users.FirstAsync(x => x.Id == userId, cancellationToken);
+    var duplicateNationalId = await dbContext.OnboardingRecords.AnyAsync(item =>
+      item.Psut == request.Psut &&
+      item.Status != WorkflowStatuses.KycRejected &&
+      item.Status != WorkflowStatuses.Rejected,
+      cancellationToken);
+    if (duplicateNationalId)
+    {
+      return Conflict(new { message = "This National ID already has an active or completed onboarding record. Review the existing customer before continuing." });
+    }
+
     var normalizedAccountDetails = request.AccountDetails with
     {
       AccountClassName = selectedAccountClass.Name,
@@ -338,13 +362,7 @@ public class OnboardingRecordsController(
     };
     var serializedSnapshot = JsonSerializer.Serialize(request.Snapshot, PersistJsonOptions);
     var serializedAdditionalDetails = JsonSerializer.Serialize(request.AdditionalDetails, PersistJsonOptions);
-    var serializedCifResponse = request.CifResponse.ValueKind == JsonValueKind.Undefined
-      ? "{}"
-      : request.CifResponse.GetRawText();
     var serializedAccountDetails = JsonSerializer.Serialize(normalizedAccountDetails, PersistJsonOptions);
-    var serializedUploadResponse = request.UploadResponse.ValueKind == JsonValueKind.Undefined
-      ? "{}"
-      : request.UploadResponse.GetRawText();
     var uploadedDocuments = normalizedAccountDetails.UploadedDocuments ?? Array.Empty<SupportingDocumentDto>();
     var serializedDocuments = JsonSerializer.Serialize(uploadedDocuments, PersistJsonOptions);
     var hasCustomerPhoto = !string.IsNullOrWhiteSpace(normalizedAccountDetails.ImageBase64);
@@ -353,12 +371,13 @@ public class OnboardingRecordsController(
 
     var record = new OnboardingRecord
     {
-      CaseReference = BuildCaseReference(request.CustomerNumber),
-      Status = WorkflowStatuses.PendingCheckerApproval,
+      CaseReference = BuildCaseReference(request.Fan),
+      TemporaryReference = BuildTemporaryReference(request.Fan),
+      Status = WorkflowStatuses.PendingKycAuthorization,
       MakerUserId = userId,
       Fan = request.Fan,
       Psut = request.Psut,
-      CustomerNumber = request.CustomerNumber,
+      CustomerNumber = BuildTemporaryReference(request.Fan),
       CustomerName = request.CustomerName,
       BranchCode = currentUser.BranchCode,
       AccountClass = selectedAccountClass.Code,
@@ -379,24 +398,30 @@ public class OnboardingRecordsController(
       HasRequiredDocuments = hasSupportingDocuments,
       SnapshotJson = serializedSnapshot,
       AdditionalDetailsJson = serializedAdditionalDetails,
-      CifResponseJson = serializedCifResponse,
+      CifResponseJson = "{}",
       AccountDetailsJson = serializedAccountDetails,
-      UploadResponseJson = serializedUploadResponse,
+      UploadResponseJson = "{}",
       DocumentsJson = serializedDocuments,
       CreatedAtUtc = DateTime.UtcNow,
       UpdatedAtUtc = DateTime.UtcNow,
       SubmittedAtUtc = DateTime.UtcNow
     };
 
+    var screening = await onboardingScreeningService.EvaluateAsync(record, cancellationToken);
+    record.ScreeningStatus = screening.Status;
+    record.HasRestrictiveScreeningMatch = screening.HasRestrictiveMatch;
+    record.ScreeningDetailsJson = JsonSerializer.Serialize(screening, PersistJsonOptions);
+
     dbContext.OnboardingRecords.Add(record);
     await dbContext.SaveChangesAsync(cancellationToken);
 
-    await auditService.LogAsync(userId, record.Id, "SUBMIT_FOR_APPROVAL", "OnboardingRecord", record.Id.ToString(), new
+    await auditService.LogAsync(userId, record.Id, "SUBMIT_FOR_KYC_AUTHORIZATION", "OnboardingRecord", record.Id.ToString(), new
     {
       record.CaseReference,
-      record.CustomerNumber,
+      record.TemporaryReference,
       record.AccountClass,
-      record.OpeningAmount
+      record.OpeningAmount,
+      record.ScreeningStatus
     }, HttpContext.Connection.RemoteIpAddress?.ToString(), cancellationToken);
 
     record.MakerUser = currentUser;
@@ -405,63 +430,19 @@ public class OnboardingRecordsController(
 
   [HttpPost("{id:guid}/approve")]
   [Authorize(Roles = UserRoles.Checker)]
-  public async Task<ActionResult<OnboardingRecordDto>> Approve(Guid id, [FromBody] ApproveRequest request, CancellationToken cancellationToken)
+  public Task<ActionResult<OnboardingRecordDto>> Approve(Guid id, [FromBody] ApproveRequest request, CancellationToken cancellationToken)
   {
-    var userId = GetRequiredUserId();
-    var checker = await dbContext.Users.FirstAsync(x => x.Id == userId, cancellationToken);
-    var record = await dbContext.OnboardingRecords
-      .Include(x => x.MakerUser)
-      .Include(x => x.CheckerUser)
-      .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
-
-    if (record is null)
-    {
-      return NotFound(new { message = "Onboarding record not found." });
-    }
-
-    if (record.Status != WorkflowStatuses.PendingCheckerApproval)
-    {
-      return BadRequest(new { message = "Only pending records can be approved." });
-    }
-
-    if (record.BranchCode != checker.BranchCode)
-    {
-      return Forbid();
-    }
-
-    var result = await accountApprovalService.CreateAccountAsync(record, cancellationToken);
-    record.CheckerUserId = checker.Id;
-    record.CheckerUser = checker;
-    record.CheckerComment = request.CheckerComment;
-    record.ReviewedAtUtc = DateTime.UtcNow;
-    record.UpdatedAtUtc = DateTime.UtcNow;
-    record.AccountServiceResponseXml = result.RawResponse;
-    record.AccountNumber = result.AccountNumber;
-    record.LastError = result.Success && result.StatusChangeSuccess ? null : result.Message;
-    record.Status = result.Success ? WorkflowStatuses.AccountCreated : WorkflowStatuses.Failed;
-
-    await dbContext.SaveChangesAsync(cancellationToken);
-
-    await auditService.LogAsync(userId, record.Id, "APPROVE_AND_CREATE_ACCOUNT", "OnboardingRecord", record.Id.ToString(), new
-    {
-      result.Success,
-      result.StatusChangeSuccess,
-      result.Message,
-      result.AccountNumber
-    }, HttpContext.Connection.RemoteIpAddress?.ToString(), cancellationToken);
-
-    return Ok(Map(record));
+    return Task.FromResult<ActionResult<OnboardingRecordDto>>(BadRequest(new { message = "Onboarding approval is performed by the KYC Unit. This checker action is no longer available." }));
   }
 
-  [HttpPost("{id:guid}/kyc-review")]
+  [HttpPost("{id:guid}/kyc/approve")]
   [Authorize(Roles = UserRoles.KycUnit)]
-  public async Task<ActionResult<OnboardingRecordDto>> MarkKycReviewed(Guid id, CancellationToken cancellationToken)
+  public async Task<ActionResult<OnboardingRecordDto>> KycApprove(Guid id, [FromBody] KycDecisionRequest request, CancellationToken cancellationToken)
   {
     var userId = GetRequiredUserId();
     var reviewer = await dbContext.Users.FirstAsync(x => x.Id == userId, cancellationToken);
     var record = await dbContext.OnboardingRecords
       .Include(x => x.MakerUser)
-      .Include(x => x.CheckerUser)
       .Include(x => x.KycReviewerUser)
       .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
@@ -470,41 +451,80 @@ public class OnboardingRecordsController(
       return NotFound(new { message = "Onboarding record not found." });
     }
 
-    if (record.Status != WorkflowStatuses.AccountCreated && record.Status != WorkflowStatuses.KycReviewed)
+    if (record.Status != WorkflowStatuses.PendingKycAuthorization &&
+        record.Status != WorkflowStatuses.PendingCheckerApproval &&
+        record.Status != WorkflowStatuses.FulfillmentFailed &&
+        record.Status != WorkflowStatuses.DuplicateCifBlocked)
     {
-      return BadRequest(new { message = "Only account-created records can be marked as KYC reviewed." });
+      return BadRequest(new { message = "This record is not available for KYC authorization." });
     }
 
-    if (record.Status != WorkflowStatuses.KycReviewed)
+    var screening = await onboardingScreeningService.EvaluateAsync(record, cancellationToken);
+    record.ScreeningStatus = screening.Status;
+    record.HasRestrictiveScreeningMatch = screening.HasRestrictiveMatch;
+    record.ScreeningDetailsJson = JsonSerializer.Serialize(screening, PersistJsonOptions);
+    record.KycReviewerUserId = reviewer.Id;
+    record.KycReviewerUser = reviewer;
+    record.KycComment = request.KycComment?.Trim();
+    record.UpdatedAtUtc = DateTime.UtcNow;
+
+    if (screening.HasRestrictiveMatch)
     {
-      record.Status = WorkflowStatuses.KycReviewed;
-      record.KycReviewerUserId = reviewer.Id;
-      record.KycReviewerUser = reviewer;
-      record.KycReviewedAtUtc = DateTime.UtcNow;
-      record.UpdatedAtUtc = DateTime.UtcNow;
-
       await dbContext.SaveChangesAsync(cancellationToken);
-
-      await auditService.LogAsync(userId, record.Id, "MARK_KYC_REVIEWED", "OnboardingRecord", record.Id.ToString(), new
+      await auditService.LogAsync(userId, record.Id, "KYC_AUTHORIZATION_BLOCKED_BY_SCREENING", "OnboardingRecord", record.Id.ToString(), new
       {
         record.CaseReference,
-        record.CustomerNumber,
-        record.Status
+        record.ScreeningStatus,
+        screening.Matches
       }, HttpContext.Connection.RemoteIpAddress?.ToString(), cancellationToken);
+
+      return BadRequest(new { message = "KYC authorization is blocked because a restrictive screening match was found." });
     }
+
+    record.Status = WorkflowStatuses.KycProcessing;
+    await dbContext.SaveChangesAsync(cancellationToken);
+
+    var fulfillment = await onboardingFulfillmentService.FulfillAsync(record, cancellationToken);
+    record.CifResponseJson = string.IsNullOrWhiteSpace(fulfillment.CifResponse) ? record.CifResponseJson : fulfillment.CifResponse;
+    record.UploadResponseJson = string.IsNullOrWhiteSpace(fulfillment.UploadResponse) ? record.UploadResponseJson : fulfillment.UploadResponse;
+    record.AccountServiceResponseXml = string.IsNullOrWhiteSpace(fulfillment.AccountResponse) ? record.AccountServiceResponseXml : fulfillment.AccountResponse;
+    record.CustomerNumber = string.IsNullOrWhiteSpace(fulfillment.CustomerNumber) ? record.CustomerNumber : fulfillment.CustomerNumber;
+    record.AccountNumber = string.IsNullOrWhiteSpace(fulfillment.AccountNumber) ? record.AccountNumber : fulfillment.AccountNumber;
+    record.LastError = fulfillment.Success ? null : fulfillment.Message;
+    record.UpdatedAtUtc = DateTime.UtcNow;
+    record.Status = fulfillment.Success
+      ? WorkflowStatuses.KycApproved
+      : (fulfillment.IsDuplicateCif ? WorkflowStatuses.DuplicateCifBlocked : WorkflowStatuses.FulfillmentFailed);
+    if (fulfillment.Success)
+    {
+      record.KycReference ??= BuildKycReference(record.BranchCode);
+      record.KycApprovedAtUtc = DateTime.UtcNow;
+      record.KycReviewedAtUtc = record.KycApprovedAtUtc;
+    }
+
+    await dbContext.SaveChangesAsync(cancellationToken);
+    await auditService.LogAsync(userId, record.Id, fulfillment.Success ? "KYC_APPROVE_AND_FULFILL" : "KYC_FULFILLMENT_FAILED", "OnboardingRecord", record.Id.ToString(), new
+    {
+      fulfillment.Success,
+      fulfillment.IsDuplicateCif,
+      fulfillment.Message,
+      fulfillment.CustomerNumber,
+      fulfillment.AccountNumber,
+      record.KycReference
+    }, HttpContext.Connection.RemoteIpAddress?.ToString(), cancellationToken);
 
     return Ok(Map(record));
   }
 
-  [HttpPost("{id:guid}/reject")]
-  [Authorize(Roles = UserRoles.Checker)]
-  public async Task<ActionResult<OnboardingRecordDto>> Reject(Guid id, [FromBody] RejectRequest request, CancellationToken cancellationToken)
+  [HttpPost("{id:guid}/kyc/reject")]
+  [Authorize(Roles = UserRoles.KycUnit)]
+  public async Task<ActionResult<OnboardingRecordDto>> KycReject(Guid id, [FromBody] KycDecisionRequest request, CancellationToken cancellationToken)
   {
     var userId = GetRequiredUserId();
-    var checker = await dbContext.Users.FirstAsync(x => x.Id == userId, cancellationToken);
+    var reviewer = await dbContext.Users.FirstAsync(x => x.Id == userId, cancellationToken);
     var record = await dbContext.OnboardingRecords
       .Include(x => x.MakerUser)
-      .Include(x => x.CheckerUser)
+      .Include(x => x.KycReviewerUser)
       .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     if (record is null)
@@ -512,29 +532,30 @@ public class OnboardingRecordsController(
       return NotFound(new { message = "Onboarding record not found." });
     }
 
-    if (record.Status != WorkflowStatuses.PendingCheckerApproval)
+    if (string.IsNullOrWhiteSpace(request.KycComment))
     {
-      return BadRequest(new { message = "Only pending records can be rejected." });
+      return BadRequest(new { message = "A KYC rejection reason is required." });
     }
 
-    if (record.BranchCode != checker.BranchCode)
+    if (record.Status != WorkflowStatuses.PendingKycAuthorization && record.Status != WorkflowStatuses.PendingCheckerApproval)
     {
-      return Forbid();
+      return BadRequest(new { message = "Only pending KYC records can be rejected." });
     }
 
-    record.Status = WorkflowStatuses.Rejected;
-    record.CheckerUserId = checker.Id;
-    record.CheckerUser = checker;
-    record.CheckerComment = request.CheckerComment;
-    record.ReviewedAtUtc = DateTime.UtcNow;
+    // Option A: nothing has been posted to FCUBS before KYC approval, so no external reversal is needed.
+    record.Status = WorkflowStatuses.KycRejected;
+    record.KycReviewerUserId = reviewer.Id;
+    record.KycReviewerUser = reviewer;
+    record.KycComment = request.KycComment.Trim();
+    record.KycRejectedAtUtc = DateTime.UtcNow;
     record.UpdatedAtUtc = DateTime.UtcNow;
-    record.LastError = request.CheckerComment;
+    record.LastError = request.KycComment.Trim();
 
     await dbContext.SaveChangesAsync(cancellationToken);
 
-    await auditService.LogAsync(userId, record.Id, "REJECT_APPROVAL", "OnboardingRecord", record.Id.ToString(), new
+    await auditService.LogAsync(userId, record.Id, "KYC_REJECT", "OnboardingRecord", record.Id.ToString(), new
     {
-      request.CheckerComment
+      request.KycComment
     }, HttpContext.Connection.RemoteIpAddress?.ToString(), cancellationToken);
 
     return Ok(Map(record));
@@ -545,10 +566,19 @@ public class OnboardingRecordsController(
     return Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
   }
 
-  private static string BuildCaseReference(string customerNumber)
+  private static string BuildCaseReference(string fan)
   {
-    return $"ONB-{customerNumber}-{DateTime.UtcNow:ddHHmmss}";
+    var suffix = string.IsNullOrWhiteSpace(fan) ? "CUSTOMER" : fan.Trim();
+    return $"ONB-{suffix}-{DateTime.UtcNow:ddHHmmss}";
   }
+
+  private static string BuildTemporaryReference(string fan)
+  {
+    var suffix = string.IsNullOrWhiteSpace(fan) ? Guid.NewGuid().ToString("N")[..8].ToUpperInvariant() : fan.Trim();
+    return $"TMP-{suffix}-{DateTime.UtcNow:yyyyMMddHHmmss}";
+  }
+
+  private static string BuildKycReference(string branchCode) => $"KYC-{branchCode}-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}";
 
   private static string BuildAccountReferenceTemplate(string branchCode, string accountCode)
   {
@@ -598,7 +628,15 @@ public class OnboardingRecordsController(
       record.AdditionalDetailsJson,
       record.CifResponseJson,
       record.AccountDetailsJson,
-      record.UploadResponseJson
+      record.UploadResponseJson,
+      record.TemporaryReference,
+      record.ScreeningStatus,
+      record.HasRestrictiveScreeningMatch,
+      record.ScreeningDetailsJson,
+      record.KycReference,
+      record.KycComment,
+      record.KycApprovedAtUtc,
+      record.KycRejectedAtUtc
     );
   }
 
@@ -606,7 +644,15 @@ public class OnboardingRecordsController(
   {
     if (role == UserRoles.KycUnit)
     {
-      return query.Where(x => x.Status == WorkflowStatuses.AccountCreated || x.Status == WorkflowStatuses.KycReviewed);
+      return query.Where(x => x.Status == WorkflowStatuses.PendingKycAuthorization ||
+                              x.Status == WorkflowStatuses.PendingCheckerApproval ||
+                              x.Status == WorkflowStatuses.KycProcessing ||
+                              x.Status == WorkflowStatuses.KycApproved ||
+                              x.Status == WorkflowStatuses.KycRejected ||
+                              x.Status == WorkflowStatuses.FulfillmentFailed ||
+                              x.Status == WorkflowStatuses.DuplicateCifBlocked ||
+                              x.Status == WorkflowStatuses.AccountCreated ||
+                              x.Status == WorkflowStatuses.KycReviewed);
     }
 
     if (role == UserRoles.Maker || role == UserRoles.Checker)
@@ -634,11 +680,11 @@ public class OnboardingRecordsController(
   private static async Task<OnboardingStatusBreakdownDto> BuildBreakdownAsync(IQueryable<OnboardingRecord> query, CancellationToken cancellationToken)
   {
     var total = await query.CountAsync(cancellationToken);
-    var pending = await query.CountAsync(x => x.Status == WorkflowStatuses.PendingCheckerApproval, cancellationToken);
-    var accountCreated = await query.CountAsync(x => x.Status == WorkflowStatuses.AccountCreated, cancellationToken);
-    var kycReviewed = await query.CountAsync(x => x.Status == WorkflowStatuses.KycReviewed, cancellationToken);
-    var failed = await query.CountAsync(x => x.Status == WorkflowStatuses.Failed, cancellationToken);
-    var rejected = await query.CountAsync(x => x.Status == WorkflowStatuses.Rejected, cancellationToken);
+    var pending = await query.CountAsync(x => x.Status == WorkflowStatuses.PendingKycAuthorization || x.Status == WorkflowStatuses.PendingCheckerApproval, cancellationToken);
+    var accountCreated = await query.CountAsync(x => x.Status == WorkflowStatuses.AccountCreated || x.Status == WorkflowStatuses.KycApproved, cancellationToken);
+    var kycReviewed = await query.CountAsync(x => x.Status == WorkflowStatuses.KycReviewed || x.Status == WorkflowStatuses.KycApproved, cancellationToken);
+    var failed = await query.CountAsync(x => x.Status == WorkflowStatuses.Failed || x.Status == WorkflowStatuses.FulfillmentFailed || x.Status == WorkflowStatuses.DuplicateCifBlocked, cancellationToken);
+    var rejected = await query.CountAsync(x => x.Status == WorkflowStatuses.Rejected || x.Status == WorkflowStatuses.KycRejected, cancellationToken);
     var totalOpeningAmount = await query.SumAsync(x => (decimal?)x.OpeningAmount, cancellationToken) ?? 0m;
 
     return new OnboardingStatusBreakdownDto(total, pending, accountCreated, kycReviewed, failed, rejected, totalOpeningAmount);
@@ -661,7 +707,6 @@ public class OnboardingRecordsController(
 
     if (string.IsNullOrWhiteSpace(request.Fan) ||
         string.IsNullOrWhiteSpace(request.Psut) ||
-        string.IsNullOrWhiteSpace(request.CustomerNumber) ||
         string.IsNullOrWhiteSpace(request.CustomerName))
     {
       return "Customer verification data is incomplete. Please restart the onboarding flow from FAN verification.";
@@ -720,11 +765,6 @@ public class OnboardingRecordsController(
         string.IsNullOrWhiteSpace(request.AccountDetails.SignatureBase64))
     {
       return "Customer photo and signature must be uploaded before submission.";
-    }
-
-    if (request.UploadResponse.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
-    {
-      return "Customer image and signature upload confirmation is missing.";
     }
 
     return null;

@@ -89,6 +89,10 @@ export class AppComponent implements OnDestroy {
       return 'Employee directory';
     }
 
+    if (this.currentRoute.startsWith('/watchlist')) {
+      return 'KYC watchlist management';
+    }
+
     if (this.currentRoute.startsWith('/password-message-audit')) {
       return 'Password SMS audit';
     }
@@ -133,6 +137,10 @@ export class AppComponent implements OnDestroy {
         : 'Onboarding reporting';
     }
 
+    if (this.currentRoute.startsWith('/kyc-authorization')) {
+      return 'KYC authorization workspace';
+    }
+
     if (this.currentRoute.startsWith('/telebirr-approvals')) {
       return 'Telebirr approval workspace';
     }
@@ -163,6 +171,10 @@ export class AppComponent implements OnDestroy {
 
     if (this.currentRoute.startsWith('/employee-directory')) {
       return 'Search, update, and maintain employee records.';
+    }
+
+    if (this.currentRoute.startsWith('/watchlist')) {
+      return 'Maintain controlled PEP, sanctions, and restricted watchlist records for KYC screening.';
     }
 
     if (this.currentRoute.startsWith('/password-message-audit')) {
@@ -205,8 +217,12 @@ export class AppComponent implements OnDestroy {
 
     if (this.currentRoute.startsWith('/onboarding-report')) {
       return this.currentUser?.role === 'KYC_UNIT'
-        ? 'Review account-created onboarding records, mark KYC completion, and monitor branch readiness from one place.'
+        ? 'Review temporary onboarding requests, screening outcomes, and customer evidence before final authorization.'
         : 'Track onboarding requests, created accounts, KYC progress, and branch totals from one report workspace.';
+    }
+
+    if (this.currentRoute.startsWith('/kyc-authorization')) {
+      return 'Approve to create the CIF, upload the customer assets, and open the account in one controlled workflow.';
     }
 
     if (this.currentRoute.startsWith('/telebirr-approvals')) {

@@ -14,6 +14,7 @@ public class OnboardingRecord
   public string Fan { get; set; } = string.Empty;
   public string Psut { get; set; } = string.Empty;
   public string CustomerNumber { get; set; } = string.Empty;
+  public string TemporaryReference { get; set; } = string.Empty;
   public string CustomerName { get; set; } = string.Empty;
   public string BranchCode { get; set; } = string.Empty;
   public string AccountClass { get; set; } = string.Empty;
@@ -29,6 +30,9 @@ public class OnboardingRecord
   public string IdType { get; set; } = string.Empty;
   public string? ResidentIdNumber { get; set; }
   public string? TinNumber { get; set; }
+  public string ScreeningStatus { get; set; } = "CLEAR";
+  public bool HasRestrictiveScreeningMatch { get; set; }
+  public string ScreeningDetailsJson { get; set; } = "{}";
   public bool HasCustomerPhoto { get; set; }
   public bool HasSignature { get; set; }
   public bool HasRequiredDocuments { get; set; }
@@ -39,6 +43,8 @@ public class OnboardingRecord
   public string UploadResponseJson { get; set; } = "{}";
   public string DocumentsJson { get; set; } = "[]";
   public string? CheckerComment { get; set; }
+  public string? KycComment { get; set; }
+  public string? KycReference { get; set; }
   public string? AccountNumber { get; set; }
   public string? AccountServiceResponseXml { get; set; }
   public string? LastError { get; set; }
@@ -47,4 +53,6 @@ public class OnboardingRecord
   public DateTime SubmittedAtUtc { get; set; } = DateTime.UtcNow;
   public DateTime? ReviewedAtUtc { get; set; }
   public DateTime? KycReviewedAtUtc { get; set; }
+  public DateTime? KycApprovedAtUtc { get; set; }
+  public DateTime? KycRejectedAtUtc { get; set; }
 }

@@ -102,11 +102,11 @@ export class CustomerOnboardingService {
     this.session.setAdditionalDetails(details);
   }
 
-  saveAccountOpeningDetails(details: AccountOpeningDetails): void {
-    this.session.setAccountOpeningDetails(details);
+  saveAccountOpeningDetails(details: AccountOpeningDetails): Promise<void> {
+    return this.session.setAccountOpeningDetails(details);
   }
 
-  getAccountOpeningDetails(): AccountOpeningDetails | null {
+  getAccountOpeningDetails(): Promise<AccountOpeningDetails | null> {
     return this.session.getAccountOpeningDetails<AccountOpeningDetails>();
   }
 

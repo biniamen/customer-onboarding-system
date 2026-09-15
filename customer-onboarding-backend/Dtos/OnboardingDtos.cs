@@ -58,7 +58,10 @@ public record AdditionalDetailsDto(
   string IdType,
   string? ResidentIdNumber,
   string? TinNumber,
-  string? GuardianName
+  string? GuardianName,
+  bool IsSoleProprietor = false,
+  string? BusinessLicenseNumber = null,
+  string? BusinessRegistrationNumber = null
 );
 
 public record AccountDetailsDto(
@@ -101,6 +104,8 @@ public record ApproveRequest(string? CheckerComment);
 
 public record RejectRequest(string CheckerComment);
 
+public record KycDecisionRequest(string? KycComment);
+
 public record OnboardingRecordDto(
   Guid Id,
   string CaseReference,
@@ -141,7 +146,15 @@ public record OnboardingRecordDto(
   string AdditionalDetailsJson,
   string CifResponseJson,
   string AccountDetailsJson,
-  string UploadResponseJson
+  string UploadResponseJson,
+  string TemporaryReference,
+  string ScreeningStatus,
+  bool HasRestrictiveScreeningMatch,
+  string ScreeningDetailsJson,
+  string? KycReference,
+  string? KycComment,
+  DateTime? KycApprovedAtUtc,
+  DateTime? KycRejectedAtUtc
 );
 
 public record OnboardingReportQueryDto(

@@ -9,6 +9,8 @@ public class FcubsOptions
   public string Service { get; set; } = "FCUBSAccService";
   public string Operation { get; set; } = "CreateCustAcc";
   public string AccountEndpoint { get; set; } = string.Empty;
+  public string CustomerEndpoint { get; set; } = string.Empty;
+  public string CustomerImageSignatureEndpoint { get; set; } = string.Empty;
   public string StatusChangeEndpoint { get; set; } = string.Empty;
   public string StatusChangeService { get; set; } = "FCUBSSTService";
   public string StatusChangeOperation { get; set; } = "CreateManStatChange";
@@ -40,6 +42,9 @@ public class FcubsOptions
   public string RtReversalProductCode { get; set; } = "CHDP";
   public string Media { get; set; } = "MAIL";
   public string Location { get; set; } = "AA";
+  // FCUBS validates the customer category as a code, not its display description.
+  public string CustomerCategory { get; set; } = "IND";
+  public string MinorCustomerCategory { get; set; } = "MINOR";
   public string Currency { get; set; } = "ETB";
   public string DefaultAccountCode { get; set; } = "73";
   public decimal MinimumRemainingBalance { get; set; } = 50m;

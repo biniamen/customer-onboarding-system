@@ -83,9 +83,11 @@ export class OnboardingReportComponent implements OnInit {
   }
 
   get statusOptions(): string[] {
-    return this.isKycUnit
-      ? ['', 'ACCOUNT_CREATED', 'KYC_REVIEWED']
-      : ['', 'PENDING_CHECKER_APPROVAL', 'ACCOUNT_CREATED', 'KYC_REVIEWED', 'FAILED', 'REJECTED'];
+    return [
+      '', 'PENDING_KYC_AUTHORIZATION', 'KYC_PROCESSING', 'KYC_APPROVED', 'KYC_REJECTED',
+      'FULFILLMENT_FAILED', 'DUPLICATE_CIF_BLOCKED', 'PENDING_CHECKER_APPROVAL',
+      'ACCOUNT_CREATED', 'KYC_REVIEWED', 'FAILED', 'REJECTED'
+    ];
   }
 
   get summaryRangeLabel(): string {
@@ -243,16 +245,6 @@ export class OnboardingReportComponent implements OnInit {
   async openDetails(record: ApprovalRecord): Promise<void> {
     let selectedRecord = record;
 
-    if (this.isKycUnit && record.status === 'ACCOUNT_CREATED') {
-      try {
-        selectedRecord = await firstValueFrom(this.workflow.markKycReviewed(record.id));
-        this.records = this.records.map((item) => item.id === selectedRecord.id ? selectedRecord : item);
-        this.loadDashboard();
-      } catch (error: any) {
-        this.toast.error('KYC review update failed', error?.error?.message || error?.message || 'Unable to mark this record as KYC reviewed.');
-      }
-    }
-
     try {
       selectedRecord = await firstValueFrom(this.workflow.getRecord(selectedRecord.id));
     } catch (error: any) {
@@ -309,12 +301,19 @@ export class OnboardingReportComponent implements OnInit {
   statusClass(status: string): string {
     switch ((status || '').toUpperCase()) {
       case 'ACCOUNT_CREATED':
+      case 'KYC_APPROVED':
         return 'bg-emerald-100 text-emerald-700';
       case 'KYC_REVIEWED':
         return 'bg-brand-100 text-brand-700';
+      case 'PENDING_KYC_AUTHORIZATION':
+      case 'KYC_PROCESSING':
+        return 'bg-amber-100 text-amber-800';
       case 'REJECTED':
+      case 'KYC_REJECTED':
+      case 'DUPLICATE_CIF_BLOCKED':
         return 'bg-rose-100 text-rose-700';
       case 'FAILED':
+      case 'FULFILLMENT_FAILED':
         return 'bg-amber-100 text-amber-700';
       default:
         return 'bg-slate-100 text-slate-700';
@@ -325,10 +324,22 @@ export class OnboardingReportComponent implements OnInit {
     switch ((status || '').toUpperCase()) {
       case 'PENDING_CHECKER_APPROVAL':
         return 'Pending approval';
+      case 'PENDING_KYC_AUTHORIZATION':
+        return 'Pending KYC authorization';
+      case 'KYC_PROCESSING':
+        return 'KYC fulfillment in progress';
       case 'ACCOUNT_CREATED':
         return 'Account created';
+      case 'KYC_APPROVED':
+        return 'KYC approved';
       case 'KYC_REVIEWED':
         return 'KYC reviewed';
+      case 'KYC_REJECTED':
+        return 'KYC rejected';
+      case 'FULFILLMENT_FAILED':
+        return 'KYC fulfillment needs attention';
+      case 'DUPLICATE_CIF_BLOCKED':
+        return 'Duplicate CIF blocked';
       case 'REJECTED':
         return 'Rejected';
       case 'FAILED':

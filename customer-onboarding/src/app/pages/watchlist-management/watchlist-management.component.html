@@ -1,0 +1,200 @@
+<section class="space-y-6">
+  <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+    <div class="max-w-3xl">
+      <p class="section-eyebrow">KYC controls</p>
+      <h1 class="section-title">Watchlist management</h1>
+      <p class="section-copy">Maintain controlled PEP, sanctions, restricted, and internal screening records.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button class="btn-secondary btn-compact" type="button" (click)="downloadTemplate()">Download import template</button>
+      <button class="btn-primary" type="button" (click)="beginCreate()">Add watchlist entry</button>
+    </div>
+  </div>
+
+  <div *ngIf="pageError" class="alert-danger">{{ pageError }}</div>
+
+  <div class="grid gap-4 md:grid-cols-3">
+    <div class="stat-card">
+      <p class="stat-label">Active entries</p>
+      <p class="stat-value">{{ activeRecords | number }}</p>
+      <p class="stat-copy">Enabled for screening</p>
+    </div>
+    <div class="stat-card stat-card-pep">
+      <p class="stat-label">PEP records</p>
+      <p class="stat-value">{{ pepRecords | number }}</p>
+      <p class="stat-copy">Politically exposed persons</p>
+    </div>
+    <div class="stat-card stat-card-sanction">
+      <p class="stat-label">Sanction records</p>
+      <p class="stat-value">{{ sanctionRecords | number }}</p>
+      <p class="stat-copy">Sanctions and restricted listings</p>
+    </div>
+  </div>
+
+  <div class="panel-card">
+    <div>
+      <p class="section-eyebrow mb-1">Controlled Excel import</p>
+      <p class="text-sm leading-6 text-slate-500">Use the clean template. Required columns: Full Name, Screening Category, and Source List.</p>
+    </div>
+
+    <div class="mt-4 grid gap-3 lg:grid-cols-[1fr,auto]">
+      <label class="upload-zone" [class.upload-zone-ready]="selectedFile">
+        <input type="file" accept=".xlsx,.xlsm" (change)="onFileSelected($event)" />
+        <span class="font-semibold text-slate-800">{{ selectedFile?.name || 'Choose watchlist workbook' }}</span>
+        <span class="text-xs text-slate-500">.xlsx or .xlsm, maximum 10 MB</span>
+      </label>
+      <button class="btn-primary" type="button" (click)="uploadWorkbook()" [disabled]="!selectedFile || importing">
+        {{ importing ? 'Importing...' : 'Import workbook' }}
+      </button>
+    </div>
+
+    <p *ngIf="importMessage" class="mt-3 text-sm font-medium text-emerald-700">{{ importMessage }}</p>
+    <div *ngIf="importErrors.length" class="mt-3 rounded-[18px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+      <p class="font-semibold">Correct these rows and upload again.</p>
+      <p *ngFor="let error of importErrors | slice:0:5" class="mt-1">{{ error }}</p>
+    </div>
+  </div>
+
+  <div class="panel-card space-y-5">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <p class="section-eyebrow mb-1">Screening register</p>
+        <p class="text-sm text-slate-500">Search names, aliases, references, documents, organizations, and source lists.</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <span class="mini-badge">{{ totalRecords | number }} records</span>
+        <button class="btn-secondary btn-compact" type="button" (click)="exportPdf()" [disabled]="exporting">
+          {{ exporting ? 'Preparing PDF...' : 'Export filtered PDF' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="rounded-[22px] border border-slate-200 bg-slate-50/80 p-3">
+      <div class="grid gap-3 md:grid-cols-2 2xl:grid-cols-[2.1fr,1fr,1fr,150px,auto]">
+        <input class="form-input" [(ngModel)]="searchTerm" (keyup.enter)="applyFilters()" placeholder="Search name, alias, reference, document, or organization" />
+        <select class="form-input" [(ngModel)]="categoryFilter" (change)="applyFilters()">
+          <option *ngFor="let option of categoryOptions" [ngValue]="option.value">{{ option.label }}</option>
+        </select>
+        <select class="form-input" [(ngModel)]="activeFilter" (change)="applyFilters()">
+          <option *ngFor="let option of activeOptions" [ngValue]="option.value">{{ option.label }}</option>
+        </select>
+        <select class="form-input" [ngModel]="pageSize" (ngModelChange)="updatePageSize($event)">
+          <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }} / page</option>
+        </select>
+        <div class="flex gap-2">
+          <button class="btn-secondary btn-compact flex-1" type="button" (click)="applyFilters()">Apply</button>
+          <button class="btn-secondary btn-compact flex-1" type="button" (click)="resetFilters()">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="watchlist-table-shell">
+      <div class="overflow-x-auto">
+        <table class="watchlist-table min-w-[960px]">
+          <thead>
+            <tr>
+              <th class="w-[26%]">Person / entity</th>
+              <th class="w-[13%]">Category</th>
+              <th class="w-[21%]">Source / reference</th>
+              <th class="w-[9%]">Risk</th>
+              <th class="w-[16%]">Screening flags</th>
+              <th class="w-[8%]">Status</th>
+              <th class="w-[7%] text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let entry of entries" [class.watchlist-row-selected]="entry.id === selectedEntry?.id">
+              <td>
+                <p class="table-title">{{ entry.fullName }}</p>
+                <p class="table-copy">{{ entry.alternateNames || entry.documentNumber || 'No alternate identity recorded' }}</p>
+              </td>
+              <td><span class="category-chip">{{ entry.screeningCategory }}</span></td>
+              <td>
+                <p class="text-sm font-semibold text-slate-700">{{ entry.sourceList }}</p>
+                <p class="table-copy">{{ entry.sourceReference || 'No source reference' }}</p>
+              </td>
+              <td><span class="risk-label" [class.risk-label-high]="isHighRisk(entry)">{{ entry.riskLevel || '-' }}</span></td>
+              <td>
+                <div class="flex flex-wrap gap-1.5">
+                  <span *ngIf="entry.isPep" class="flag-chip flag-chip-pep">PEP</span>
+                  <span *ngIf="entry.isSanctioned" class="flag-chip flag-chip-sanction">Sanction</span>
+                  <span *ngIf="entry.requiresEnhancedDueDiligence" class="flag-chip flag-chip-edd">EDD</span>
+                  <span *ngIf="!entry.isPep && !entry.isSanctioned && !entry.requiresEnhancedDueDiligence" class="table-copy">-</span>
+                </div>
+              </td>
+              <td>
+                <span class="status-chip" [class.status-chip-active]="entry.isActive" [class.status-chip-inactive]="!entry.isActive">
+                  {{ entry.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td class="text-right"><button class="btn-secondary btn-compact" type="button" (click)="selectEntry(entry)">View / edit</button></td>
+            </tr>
+            <tr *ngIf="loading"><td colspan="7" class="px-4 py-12 text-center text-sm text-slate-500">Loading Watchlist records...</td></tr>
+            <tr *ngIf="!loading && !entries.length"><td colspan="7" class="px-4 py-12 text-center text-sm text-slate-500">No Watchlist entries match the current filters.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-sm text-slate-600">Showing {{ showingFrom }}-{{ showingTo }} of {{ totalRecords | number }} records</p>
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button class="pagination-button" type="button" (click)="changePage(1)" [disabled]="currentPage <= 1">First</button>
+          <button class="pagination-button" type="button" (click)="changePage(currentPage - 1)" [disabled]="currentPage <= 1">Previous</button>
+          <button *ngFor="let page of pageNumbers" class="pagination-button" [class.pagination-button-current]="page === currentPage" type="button" (click)="changePage(page)">{{ page }}</button>
+          <button class="pagination-button" type="button" (click)="changePage(currentPage + 1)" [disabled]="currentPage >= totalPages">Next</button>
+          <button class="pagination-button" type="button" (click)="changePage(totalPages)" [disabled]="currentPage >= totalPages">Last</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="watchlist-modal-backdrop" *ngIf="selectedEntry || isCreating" (click)="closeEditor()">
+  <section class="watchlist-modal" role="dialog" aria-modal="true" aria-label="Watchlist entry editor" (click)="$event.stopPropagation()">
+    <div class="watchlist-modal-header">
+      <div>
+        <p class="section-eyebrow">{{ isCreating ? 'New entry' : 'Watchlist details' }}</p>
+        <h2 class="mt-1 text-2xl font-bold text-slate-900">{{ isCreating ? 'Add controlled record' : selectedEntry?.fullName }}</h2>
+        <p *ngIf="selectedEntry && !isCreating" class="mt-1 text-sm text-slate-500">Last updated {{ selectedEntry.updatedAtUtc | date:'medium' }}</p>
+      </div>
+      <button class="btn-secondary btn-compact" type="button" (click)="closeEditor()">Close</button>
+    </div>
+
+    <form class="watchlist-editor" [formGroup]="entryForm">
+      <div class="grid gap-4 md:grid-cols-2">
+        <div class="md:col-span-2"><label class="field-label">Full name / entity name *</label><input class="input-field" formControlName="fullName" /></div>
+        <div class="md:col-span-2"><label class="field-label">Alternate names / aliases</label><input class="input-field" formControlName="alternateNames" /></div>
+        <div><label class="field-label">Screening category *</label><select class="input-field" formControlName="screeningCategory" (change)="categoryChanged()"><option *ngFor="let option of categoryOptions | slice:1" [value]="option.value">{{ option.label }}</option></select></div>
+        <div><label class="field-label">Risk level</label><input class="input-field" formControlName="riskLevel" placeholder="High, Very High, Medium" /></div>
+        <div><label class="field-label">Source list *</label><input class="input-field" formControlName="sourceList" placeholder="PEP Ethiopia, UN Sanctions" /></div>
+        <div><label class="field-label">Source reference</label><input class="input-field" formControlName="sourceReference" /></div>
+        <div><label class="field-label">Nationality</label><input class="input-field" formControlName="nationality" /></div>
+        <div><label class="field-label">Country</label><input class="input-field" formControlName="country" /></div>
+        <div><label class="field-label">Date of birth</label><input class="input-field" type="date" formControlName="dateOfBirth" /></div>
+        <div><label class="field-label">Place of birth</label><input class="input-field" formControlName="placeOfBirth" /></div>
+        <div><label class="field-label">Document type</label><input class="input-field" formControlName="documentType" /></div>
+        <div><label class="field-label">Document number</label><input class="input-field" formControlName="documentNumber" /></div>
+        <div><label class="field-label">Position or role</label><input class="input-field" formControlName="positionOrRole" /></div>
+        <div><label class="field-label">Organization</label><input class="input-field" formControlName="organization" /></div>
+        <div><label class="field-label">Listed on</label><input class="input-field" type="date" formControlName="listedOn" /></div>
+        <div><label class="field-label">Expiry date</label><input class="input-field" type="date" formControlName="expiryDate" /></div>
+        <div><label class="field-label">City or region</label><input class="input-field" formControlName="cityOrRegion" /></div>
+        <div><label class="field-label">Source URL</label><input class="input-field" formControlName="sourceUrl" /></div>
+        <div class="md:col-span-2"><label class="field-label">Address</label><input class="input-field" formControlName="address" /></div>
+        <div class="md:col-span-2"><label class="field-label">Remarks</label><textarea class="input-field min-h-[76px]" formControlName="remarks"></textarea></div>
+      </div>
+
+      <div class="grid gap-2 sm:grid-cols-2">
+        <label class="control-toggle"><input type="checkbox" formControlName="isActive" /> Active for screening</label>
+        <label class="control-toggle"><input type="checkbox" formControlName="isPep" /> PEP classification</label>
+        <label class="control-toggle"><input type="checkbox" formControlName="isSanctioned" /> Sanction classification</label>
+        <label class="control-toggle"><input type="checkbox" formControlName="requiresEnhancedDueDiligence" /> Requires enhanced due diligence</label>
+      </div>
+    </form>
+
+    <div class="watchlist-modal-footer">
+      <button *ngIf="selectedEntry && !isCreating" class="btn-secondary text-rose-700" type="button" (click)="deleteEntry()" [disabled]="deleting">{{ deleting ? 'Deleting...' : 'Delete entry' }}</button>
+      <div class="ml-auto flex gap-3"><button class="btn-secondary" type="button" (click)="closeEditor()">Cancel</button><button class="btn-primary" type="button" (click)="saveEntry()" [disabled]="saving">{{ saving ? 'Saving...' : (isCreating ? 'Create entry' : 'Save changes') }}</button></div>
+    </div>
+  </section>
+</div>

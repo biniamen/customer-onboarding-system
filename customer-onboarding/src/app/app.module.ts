@@ -33,6 +33,9 @@ import { TelebirrReportComponent } from './pages/telebirr-report/telebirr-report
 import { TelebirrTransferComponent } from './pages/telebirr-transfer/telebirr-transfer.component';
 import { UserManagementComponent } from './pages/user-management/user-management.component';
 import { WorkspaceHomeComponent } from './pages/workspace-home/workspace-home.component';
+import { WatchlistManagementComponent } from './pages/watchlist-management/watchlist-management.component';
+import { KycAuthorizationComponent } from './pages/kyc-authorization/kyc-authorization.component';
+import { BranchManagementComponent } from './pages/branch-management/branch-management.component';
 
 @NgModule({
   declarations: [
@@ -57,6 +60,9 @@ import { WorkspaceHomeComponent } from './pages/workspace-home/workspace-home.co
     TelebirrApprovalsComponent,
     TelebirrReportComponent,
     UserManagementComponent,
+    BranchManagementComponent,
+    WatchlistManagementComponent,
+    KycAuthorizationComponent,
     WorkspaceHomeComponent,
     LoginComponent,
     CheckerDashboardComponent,

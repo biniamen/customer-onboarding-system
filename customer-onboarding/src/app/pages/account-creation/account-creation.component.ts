@@ -10,7 +10,6 @@ import {
   AdditionalCustomerDetails,
   AccountOpeningDetails,
   CustomerProfileSnapshot,
-  FcubsSubmissionResult,
   FundingSourceType,
   SupportingDocument
 } from 'src/app/models/onboarding.models';
@@ -39,7 +38,6 @@ export class AccountCreationComponent implements OnInit {
   ];
   accountClasses: AccountClassOption[] = [];
   profile: CustomerProfileSnapshot | null = null;
-  customerResult: FcubsSubmissionResult | null = null;
   approvalRecord: ApprovalRecord | null = null;
   uploadResponse: any = null;
   uploadSuccessMessage: string | null = null;
@@ -62,6 +60,7 @@ export class AccountCreationComponent implements OnInit {
   };
   optionalDocuments: SupportingDocument[] = [];
   loadingAccountClasses = false;
+  validationAttempted = false;
   readonly branchCode: string;
 
   form = this.fb.group({
@@ -93,16 +92,10 @@ export class AccountCreationComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     this.profile = this.onboarding.getProfileSnapshot();
-    this.customerResult = this.session.getFcubsResponse<FcubsSubmissionResult>();
     this.additionalDetails = this.session.getAdditionalDetails();
 
     if (!this.profile) {
       this.router.navigate(['/fan-verification']);
-      return;
-    }
-
-    if (!this.customerResult?.customerNumber) {
-      this.router.navigate(['/review-submit']);
       return;
     }
 
@@ -115,7 +108,7 @@ export class AccountCreationComponent implements OnInit {
     await this.loadAccountClasses();
     void this.loadNidPhotoPreview();
 
-    const savedDetails = this.onboarding.getAccountOpeningDetails();
+    const savedDetails = await this.onboarding.getAccountOpeningDetails();
     if (savedDetails) {
       this.form.patchValue(savedDetails);
       this.uploadPreviewReady = true;
@@ -138,7 +131,7 @@ export class AccountCreationComponent implements OnInit {
   }
 
   get customerNumber(): string {
-    return this.customerResult?.customerNumber || '';
+    return 'Temporary - assigned after KYC approval';
   }
 
   get selectedAccountClassName(): string {
@@ -167,6 +160,15 @@ export class AccountCreationComponent implements OnInit {
     return false;
   }
 
+  get isDuplicateError(): boolean {
+    return /duplicate|already has an active|st-cif24/i.test(this.pageError || '');
+  }
+
+  controlInvalid(controlName: string): boolean {
+    const control = this.form.get(controlName);
+    return !!control && (control.touched || this.validationAttempted) && control.invalid;
+  }
+
   onImageSelected(event: Event): void {
     this.handleFileSelection(event, 'image');
   }
@@ -175,11 +177,12 @@ export class AccountCreationComponent implements OnInit {
     this.handleFileSelection(event, 'signature');
   }
 
-  uploadAssets(): void {
+  async uploadAssets(): Promise<void> {
     this.pageError = null;
     this.uploadSuccessMessage = null;
     this.form.markAllAsTouched();
     if (this.form.invalid) {
+      this.showInvalidFormAlert('Select an account class, enter a valid opening amount, and attach the customer photo and signature.');
       return;
     }
 
@@ -191,30 +194,22 @@ export class AccountCreationComponent implements OnInit {
     }
 
     const details = this.buildAccountOpeningDetails();
-    this.onboarding.saveAccountOpeningDetails(details);
+    await this.onboarding.saveAccountOpeningDetails(details);
     this.uploading = true;
-
-    this.onboarding.uploadCustomerImageAndSignature(this.customerNumber, details).subscribe({
-      next: (response) => {
-        this.uploading = false;
-        this.uploadResponse = response;
-        this.uploadPreviewReady = true;
-        this.refreshApprovalReadiness();
-        this.uploadSuccessMessage = 'Customer photo and signature are ready for checker review.';
-        this.toast.success('Files uploaded', 'Customer photo and signature are ready for checker review.');
-      },
-      error: (error: any) => {
-        this.uploading = false;
-        this.pageError = error?.error?.message || error?.message || 'Failed to upload customer image and signature.';
-        this.toast.error('Upload failed', this.pageError || 'Upload failed.');
-      }
-    });
+    // Files are held with the temporary request and uploaded to CBS only after KYC approval.
+    this.uploadResponse = { success: true, deferredUntilKycApproval: true };
+    this.uploadPreviewReady = true;
+    this.uploading = false;
+    this.refreshApprovalReadiness();
+    this.uploadSuccessMessage = 'Customer photo and signature are ready for KYC authorization.';
+    this.toast.success('Files ready', this.uploadSuccessMessage);
   }
 
-  submitForApproval(): void {
+  async submitForApproval(): Promise<void> {
     this.pageError = null;
     this.form.markAllAsTouched();
-    if (this.form.invalid || !this.customerNumber) {
+    if (this.form.invalid) {
+      this.showInvalidFormAlert('Select an account class, enter a valid opening amount, and attach the customer photo and signature before submission.');
       return;
     }
 
@@ -226,28 +221,28 @@ export class AccountCreationComponent implements OnInit {
     }
 
     const details = this.buildAccountOpeningDetails();
-    this.onboarding.saveAccountOpeningDetails(details);
+    await this.onboarding.saveAccountOpeningDetails(details);
     this.submittingApproval = true;
 
     const payload = this.buildApprovalPayload(details);
     this.workflow.submitForApproval(payload).subscribe({
-      next: (response) => {
+      next: async (response) => {
         this.submittingApproval = false;
         this.approvalRecord = response;
-        this.toast.success('Submitted', `Case ${response.caseReference} is now waiting for checker approval.`);
-        this.session.clearAll();
+        this.toast.success('Submitted', `Case ${response.caseReference} is now waiting for KYC authorization.`);
+        await this.session.clearAll();
         this.router.navigate(['/workspace']);
       },
       error: (error: any) => {
         this.submittingApproval = false;
-        this.pageError = error?.error?.message || error?.message || 'Failed to submit the case for checker approval.';
+        this.pageError = error?.error?.message || error?.message || 'Failed to submit the case for KYC authorization.';
         this.toast.error('Submission failed', this.pageError || 'Submission failed.');
       }
     });
   }
 
-  finishProcess(): void {
-    this.session.clearAll();
+  async finishProcess(): Promise<void> {
+    await this.session.clearAll();
     this.router.navigate(['/workspace']);
   }
 
@@ -411,14 +406,14 @@ export class AccountCreationComponent implements OnInit {
 
   private buildApprovalPayload(details: AccountOpeningDetails): ApprovalSubmissionPayload {
     const additionalDetails = this.session.getAdditionalDetails();
-    if (!this.profile || !this.customerResult || !additionalDetails) {
+    if (!this.profile || !additionalDetails) {
       throw new Error('Approval payload is incomplete.');
     }
 
     return {
       fan: this.session.getFan(),
       psut: this.session.getPsut(),
-      customerNumber: this.customerNumber,
+      customerNumber: '',
       customerName: this.profile.fullName,
       branchCode: this.branchCode,
       accountClass: details.accountClass,
@@ -429,9 +424,8 @@ export class AccountCreationComponent implements OnInit {
       accountReference: details.accountNumberTemplate,
       snapshot: this.profile,
       additionalDetails,
-      cifResponse: this.customerResult,
       accountDetails: details,
-      uploadResponse: this.uploadResponse || { success: true, message: this.uploadSuccessMessage || 'Uploaded successfully.' }
+      uploadResponse: this.uploadResponse || { success: true, message: this.uploadSuccessMessage || 'Files ready for KYC approval.' }
     };
   }
 
@@ -474,6 +468,12 @@ export class AccountCreationComponent implements OnInit {
     }
 
     return null;
+  }
+
+  private showInvalidFormAlert(message: string): void {
+    this.validationAttempted = true;
+    this.pageError = message;
+    this.toast.error('Mandatory account fields are incomplete', message);
   }
 
   private validateAssetUploadPrerequisites(): string | null {
@@ -617,7 +617,7 @@ export class AccountCreationComponent implements OnInit {
   private applyOpeningAmountValidators(): void {
     const control = this.form.controls.openingAmount;
     const minimumOpeningAmount = Math.max(0, this.minimumOpeningAmount);
-    control.setValidators([Validators.required, Validators.min(minimumOpeningAmount || 1)]);
+    control.setValidators([Validators.required, Validators.min(minimumOpeningAmount || 1), Validators.max(1000)]);
 
     const currentAmount = Number(control.value || 0);
     if (!Number.isFinite(currentAmount) || currentAmount < minimumOpeningAmount) {
@@ -639,6 +639,10 @@ export class AccountCreationComponent implements OnInit {
 
     if (openingAmount < this.minimumOpeningAmount) {
       return `Opening amount for ${this.form.controls.accountClass.value} must be at least ${this.minimumOpeningAmount} ${this.selectedAccountCurrencyCode}.`;
+    }
+
+    if (openingAmount > 1000) {
+      return 'Initial opening deposit cannot exceed ETB 1,000 before KYC approval.';
     }
 
     return null;

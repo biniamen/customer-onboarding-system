@@ -51,6 +51,9 @@ export interface AdditionalCustomerDetails {
   residentIdNumber?: string;
   tinNumber?: string;
   guardianName?: string;
+  isSoleProprietor?: boolean;
+  businessLicenseNumber?: string;
+  businessRegistrationNumber?: string;
 }
 
 export type FundingSourceType = 'CASH' | 'ACCOUNT' | 'GL';
@@ -218,6 +221,25 @@ export interface BranchOption {
   branchName: string;
 }
 
+export interface ManagedBranch {
+  branchCode: string;
+  branchName: string;
+  isActive: boolean;
+  assignedUserCount: number;
+  activeUserCount: number;
+  onboardingRecordCount: number;
+}
+
+export interface CreateBranchRequest {
+  branchCode: string;
+  branchName: string;
+}
+
+export interface UpdateBranchRequest {
+  branchName: string;
+  isActive: boolean;
+}
+
 export interface AdminUserListItem {
   id: string;
   username: string;
@@ -296,6 +318,14 @@ export interface UpdatePasswordMessageTemplateRequest {
   title: string;
   body: string;
   isActive: boolean;
+}
+
+export interface PasswordManagedSystem {
+  id: number;
+  name: string;
+  isActive: boolean;
+  updatedAtUtc: string;
+  updatedByUserName: string;
 }
 
 export interface SendPasswordResetSmsRequest {
@@ -453,9 +483,9 @@ export interface ApprovalSubmissionPayload {
   accountReference: string;
   snapshot: CustomerProfileSnapshot;
   additionalDetails: AdditionalCustomerDetails;
-  cifResponse: FcubsSubmissionResult;
+  cifResponse?: FcubsSubmissionResult | null;
   accountDetails: AccountOpeningDetails;
-  uploadResponse: any;
+  uploadResponse?: any;
 }
 
 export interface ApprovalRecord {
@@ -499,6 +529,14 @@ export interface ApprovalRecord {
   cifResponseJson: string;
   accountDetailsJson: string;
   uploadResponseJson: string;
+  temporaryReference: string;
+  screeningStatus: string;
+  hasRestrictiveScreeningMatch: boolean;
+  screeningDetailsJson: string;
+  kycReference?: string | null;
+  kycComment?: string | null;
+  kycApprovedAtUtc?: string | null;
+  kycRejectedAtUtc?: string | null;
 }
 
 export interface OnboardingReportQuery {
@@ -915,4 +953,96 @@ export interface ResourceMobilizationDashboardStats {
   today: ResourceMobilizationDashboardPeriod;
   thisWeek: ResourceMobilizationDashboardPeriod;
   thisMonth: ResourceMobilizationDashboardPeriod;
+}
+
+export type WatchlistCategory = 'PEP' | 'SANCTION' | 'WATCHLIST' | 'NBE_RESTRICTED' | 'INTERNAL_BLACKLIST';
+
+export interface WatchlistEntry {
+  id: string;
+  fullName: string;
+  alternateNames?: string | null;
+  screeningCategory: WatchlistCategory | string;
+  sourceList: string;
+  sourceReference?: string | null;
+  riskLevel?: string | null;
+  nationality?: string | null;
+  dateOfBirth?: string | null;
+  placeOfBirth?: string | null;
+  documentType?: string | null;
+  documentNumber?: string | null;
+  positionOrRole?: string | null;
+  organization?: string | null;
+  country?: string | null;
+  cityOrRegion?: string | null;
+  address?: string | null;
+  listedOn?: string | null;
+  expiryDate?: string | null;
+  isActive: boolean;
+  isPep: boolean;
+  isSanctioned: boolean;
+  requiresEnhancedDueDiligence: boolean;
+  remarks?: string | null;
+  sourceUrl?: string | null;
+  importedFileName?: string | null;
+  sourceRowNumber?: number | null;
+  createdByUserName?: string | null;
+  updatedByUserName?: string | null;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+}
+
+export interface WatchlistQuery {
+  search?: string;
+  category?: string;
+  sourceList?: string;
+  isActive?: boolean;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface WatchlistPagedResponse {
+  page: number;
+  pageSize: number;
+  totalRecords: number;
+  totalPages: number;
+  activeRecords: number;
+  pepRecords: number;
+  sanctionRecords: number;
+  items: WatchlistEntry[];
+}
+
+export interface UpsertWatchlistEntryRequest {
+  fullName: string;
+  alternateNames?: string | null;
+  screeningCategory: string;
+  sourceList: string;
+  sourceReference?: string | null;
+  riskLevel?: string | null;
+  nationality?: string | null;
+  dateOfBirth?: string | null;
+  placeOfBirth?: string | null;
+  documentType?: string | null;
+  documentNumber?: string | null;
+  positionOrRole?: string | null;
+  organization?: string | null;
+  country?: string | null;
+  cityOrRegion?: string | null;
+  address?: string | null;
+  listedOn?: string | null;
+  expiryDate?: string | null;
+  isActive: boolean;
+  isPep: boolean;
+  isSanctioned: boolean;
+  requiresEnhancedDueDiligence: boolean;
+  remarks?: string | null;
+  sourceUrl?: string | null;
+}
+
+export interface WatchlistImportResult {
+  worksheetName: string;
+  processedRows: number;
+  insertedRows: number;
+  updatedRows: number;
+  skippedBlankRows: number;
+  errors: string[];
 }

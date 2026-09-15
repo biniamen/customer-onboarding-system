@@ -23,6 +23,9 @@ import { TelebirrApprovalsComponent } from './pages/telebirr-approvals/telebirr-
 import { TelebirrReportComponent } from './pages/telebirr-report/telebirr-report.component';
 import { TelebirrTransferComponent } from './pages/telebirr-transfer/telebirr-transfer.component';
 import { UserManagementComponent } from './pages/user-management/user-management.component';
+import { WatchlistManagementComponent } from './pages/watchlist-management/watchlist-management.component';
+import { KycAuthorizationComponent } from './pages/kyc-authorization/kyc-authorization.component';
+import { BranchManagementComponent } from './pages/branch-management/branch-management.component';
 import { WorkspaceHomeComponent } from './pages/workspace-home/workspace-home.component';
 import { environment } from 'src/environments/environment';
 
@@ -49,10 +52,13 @@ const routes: Routes = [
     { path: 'telebirr-approvals', component: TelebirrApprovalsComponent, canActivate: [AuthGuard], data: { roles: ['CHECKER'] } }
   ] : []),
   { path: 'checker-dashboard', component: CheckerDashboardComponent, canActivate: [AuthGuard], data: { roles: ['CHECKER'] } },
+  { path: 'kyc-authorization', component: KycAuthorizationComponent, canActivate: [AuthGuard], data: { roles: ['KYC_UNIT'] } },
   { path: 'approved-accounts', component: ApprovedAccountsComponent, canActivate: [AuthGuard], data: { roles: ['MAKER', 'CHECKER'] } },
   { path: 'user-management', component: UserManagementComponent, canActivate: [AuthGuard], data: { roles: ['ADMIN', 'SYSTEM_ADMIN'] } },
+  { path: 'branch-management', component: BranchManagementComponent, canActivate: [AuthGuard], data: { roles: ['ADMIN', 'SYSTEM_ADMIN'] } },
   { path: 'password-management', component: PasswordManagementComponent, canActivate: [AuthGuard], data: { roles: ['ADMIN', 'SYSTEM_ADMIN'] } },
   { path: 'employee-directory', component: EmployeeDirectoryManagementComponent, canActivate: [AuthGuard], data: { roles: ['ADMIN', 'SYSTEM_ADMIN', 'HR'] } },
+  { path: 'watchlist', component: WatchlistManagementComponent, canActivate: [AuthGuard], data: { roles: ['ADMIN', 'SYSTEM_ADMIN', 'KYC_UNIT'] } },
   { path: 'password-message-audit', component: PasswordMessageAuditLogComponent, canActivate: [AuthGuard], data: { roles: ['ADMIN', 'SYSTEM_ADMIN'] } },
   { path: 'password-sms-templates', component: PasswordSmsTemplatesComponent, canActivate: [AuthGuard], data: { roles: ['ADMIN'] } },
   { path: '**', redirectTo: 'login' }

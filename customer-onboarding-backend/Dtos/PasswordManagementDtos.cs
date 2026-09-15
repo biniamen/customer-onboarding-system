@@ -43,6 +43,18 @@ public record UpdatePasswordMessageTemplateRequest(
   bool IsActive = true
 );
 
+public record PasswordManagedSystemDto(
+  int Id,
+  string Name,
+  bool IsActive,
+  DateTimeOffset UpdatedAtUtc,
+  string UpdatedByUserName
+);
+
+public record CreatePasswordManagedSystemRequest(string Name);
+
+public record UpdatePasswordManagedSystemRequest(string Name, bool IsActive);
+
 public record SendPasswordResetSmsRequest(
   string ExternalUserId,
   string SystemName,

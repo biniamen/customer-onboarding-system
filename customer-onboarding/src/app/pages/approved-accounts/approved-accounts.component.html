@@ -62,10 +62,10 @@
               <td class="px-5 py-4 whitespace-nowrap">
                 <span class="rounded-full px-3 py-1 text-xs font-semibold"
                   [ngClass]="{
-                    'bg-amber-50 text-amber-700': record.status === 'PENDING_CHECKER_APPROVAL',
-                    'bg-emerald-50 text-emerald-700': record.status === 'ACCOUNT_CREATED',
-                    'bg-rose-50 text-rose-700': record.status === 'REJECTED' || record.status === 'FAILED',
-                    'bg-slate-100 text-slate-700': record.status !== 'PENDING_CHECKER_APPROVAL' && record.status !== 'ACCOUNT_CREATED' && record.status !== 'REJECTED' && record.status !== 'FAILED'
+                    'bg-amber-50 text-amber-700': record.status === 'PENDING_CHECKER_APPROVAL' || record.status === 'PENDING_KYC_AUTHORIZATION' || record.status === 'KYC_PROCESSING',
+                    'bg-emerald-50 text-emerald-700': record.status === 'ACCOUNT_CREATED' || record.status === 'KYC_APPROVED',
+                    'bg-rose-50 text-rose-700': record.status === 'REJECTED' || record.status === 'KYC_REJECTED' || record.status === 'FAILED' || record.status === 'FULFILLMENT_FAILED' || record.status === 'DUPLICATE_CIF_BLOCKED',
+                    'bg-slate-100 text-slate-700': record.status !== 'PENDING_CHECKER_APPROVAL' && record.status !== 'PENDING_KYC_AUTHORIZATION' && record.status !== 'KYC_PROCESSING' && record.status !== 'ACCOUNT_CREATED' && record.status !== 'KYC_APPROVED' && record.status !== 'REJECTED' && record.status !== 'KYC_REJECTED' && record.status !== 'FAILED' && record.status !== 'FULFILLMENT_FAILED' && record.status !== 'DUPLICATE_CIF_BLOCKED'
                   }">
                   {{ getStatusLabel(record.status) }}
                 </span>
